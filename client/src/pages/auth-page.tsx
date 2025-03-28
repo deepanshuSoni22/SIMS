@@ -42,11 +42,7 @@ export default function AuthPage() {
   });
 
   const handleLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data, {
-      onSuccess: () => {
-        navigate("/dashboard");
-      },
-    });
+    loginMutation.mutate(data);
   };
 
   // Register form
@@ -63,11 +59,7 @@ export default function AuthPage() {
   });
 
   const handleRegisterSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data, {
-      onSuccess: () => {
-        navigate("/dashboard");
-      },
-    });
+    registerMutation.mutate(data);
   };
 
   return (
