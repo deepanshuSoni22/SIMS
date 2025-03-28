@@ -46,6 +46,10 @@ export default function UserManagementPage() {
   const [selectedRole, setSelectedRole] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddUserDialogOpen, setIsAddUserDialogOpen] = useState(false);
+  const [isEditUserDialogOpen, setIsEditUserDialogOpen] = useState(false);
+  const [isResetPasswordDialogOpen, setIsResetPasswordDialogOpen] = useState(false);
+  const [isDeleteUserDialogOpen, setIsDeleteUserDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
 
   // Fetch all users
   const { data: users, isLoading, refetch } = useQuery<User[]>({
@@ -83,6 +87,80 @@ export default function UserManagementPage() {
     },
   });
 
+  // Update user mutation
+  const updateUserMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: Partial<CreateUserFormValues> }) => {
+      const { confirmPassword, password, ...updateData } = data;
+      const res = await apiRequest("PATCH", `/api/users/${id}`, updateData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "User updated successfully",
+        description: "The user information has been updated.",
+      });
+      // Invalidate users query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsEditUserDialogOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update user",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: async ({ id, password }: { id: number, password: string }) => {
+      const res = await apiRequest("POST", `/api/users/${id}/reset-password`, { password });
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Password reset successfully",
+        description: "The user's password has been reset.",
+      });
+      setIsResetPasswordDialogOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to reset password",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete user mutation
+  const deleteUserMutation = useMutation({
+    mutationFn: async (userId: number) => {
+      const res = await apiRequest("DELETE", `/api/users/${userId}`);
+      return res.ok;
+    },
+    onSuccess: () => {
+      toast({
+        title: "User deleted successfully",
+        description: "The user has been removed from the system.",
+      });
+      // Invalidate users query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsDeleteUserDialogOpen(false);
+      setSelectedUser(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete user",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create user form
   const form = useForm<CreateUserFormValues>({
     resolver: zodResolver(createUserSchema),
@@ -96,11 +174,75 @@ export default function UserManagementPage() {
     },
   });
   
+  // Create edit user form schema (without required password)
+  const editUserSchema = z.object({
+    name: z.string().min(2, "Name must be at least 2 characters"),
+    username: z.string().min(2, "Username must be at least 2 characters"),
+    role: z.string(),
+    departmentId: z.number().nullable(),
+    password: z.string().optional(),
+    confirmPassword: z.string().optional(),
+  }).refine(data => {
+    // If password is provided, confirmPassword must match
+    if (data.password && data.password !== data.confirmPassword) {
+      return false;
+    }
+    return true;
+  }, {
+    message: "Passwords do not match",
+    path: ["confirmPassword"],
+  });
+  
+  // Edit user form
+  const editUserForm = useForm<CreateUserFormValues>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      name: "",
+      username: "",
+      role: roles.STUDENT,
+      departmentId: null,
+      password: "",
+      confirmPassword: "",
+    },
+  });
+  
+  // Reset password form
+  const resetPasswordForm = useForm<{ password: string, confirmPassword: string }>({
+    resolver: zodResolver(
+      z.object({
+        password: z.string().min(6, "Password must be at least 6 characters"),
+        confirmPassword: z.string(),
+      }).refine(data => data.password === data.confirmPassword, {
+        message: "Passwords do not match",
+        path: ["confirmPassword"],
+      })
+    ),
+    defaultValues: {
+      password: "",
+      confirmPassword: "",
+    },
+  });
+  
   // Watch role to conditionally show/hide department selection
   const selectedUserRole = form.watch("role");
 
   const onSubmit = (data: CreateUserFormValues) => {
     createUserMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: Partial<CreateUserFormValues>) => {
+    if (!selectedUser) return;
+    updateUserMutation.mutate({ id: selectedUser.id, data });
+  };
+
+  const onResetPasswordSubmit = (data: { password: string, confirmPassword: string }) => {
+    if (!selectedUser) return;
+    resetPasswordMutation.mutate({ id: selectedUser.id, password: data.password });
+  };
+
+  const onDeleteUser = () => {
+    if (!selectedUser) return;
+    deleteUserMutation.mutate(selectedUser.id);
   };
 
   // Filter users based on selected role and search query
@@ -287,16 +429,56 @@ export default function UserManagementPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                // Set up edit user form
+                                editUserForm.reset({
+                                  name: user.name,
+                                  username: user.username,
+                                  role: user.role,
+                                  departmentId: user.departmentId,
+                                  password: "",
+                                  confirmPassword: "",
+                                });
+                                setIsEditUserDialogOpen(true);
+                              }}
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                // Contact user functionality (could be implemented later)
+                                toast({
+                                  title: "Contact User",
+                                  description: `Feature to contact ${user.name} coming soon.`,
+                                });
+                              }}
+                            >
                               <Mail className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsResetPasswordDialogOpen(true);
+                              }}
+                            >
                               <Key className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setSelectedUser(user);
+                                setIsDeleteUserDialogOpen(true);
+                              }}
+                            >
                               <UserX className="h-4 w-4" />
                             </Button>
                           </div>
@@ -494,6 +676,240 @@ export default function UserManagementPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit User Dialog */}
+      <Dialog open={isEditUserDialogOpen} onOpenChange={setIsEditUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user information and permissions.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...editUserForm}>
+            <form onSubmit={editUserForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editUserForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Full Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="John Doe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="username"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Username</FormLabel>
+                    <FormControl>
+                      <Input placeholder="johndoe" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="role"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Role</FormLabel>
+                    <Select 
+                      onValueChange={(value) => {
+                        field.onChange(value);
+                        // Reset departmentId to null when selecting Admin or HOD
+                        if (value === roles.ADMIN || value === roles.HOD) {
+                          editUserForm.setValue("departmentId", null);
+                        }
+                      }} 
+                      value={field.value}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select role" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value={roles.ADMIN}>Administrator</SelectItem>
+                        <SelectItem value={roles.HOD}>Head of Department</SelectItem>
+                        <SelectItem value={roles.FACULTY}>Faculty</SelectItem>
+                        <SelectItem value={roles.STUDENT}>Student</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              {/* Only show department selection for faculty and students */}
+              {(editUserForm.watch("role") === roles.FACULTY || editUserForm.watch("role") === roles.STUDENT) && (
+                <FormField
+                  control={editUserForm.control}
+                  name="departmentId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Department</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                        value={field.value === null ? "none" : field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select department" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="none">None</SelectItem>
+                          {departments?.map((dept) => (
+                            <SelectItem key={dept.id} value={dept.id.toString()}>
+                              {dept.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              )}
+              
+              {/* Show note for HOD users */}
+              {editUserForm.watch("role") === roles.HOD && (
+                <div className="text-sm text-amber-600 flex items-start gap-2 p-2 bg-amber-50 rounded border border-amber-200">
+                  <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">HODs are assigned to departments separately</p>
+                    <p className="mt-1">After updating the HOD, go to the Departments page to assign this HOD to a department.</p>
+                  </div>
+                </div>
+              )}
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateUserMutation.isPending}>
+                  {updateUserMutation.isPending ? "Updating..." : "Update User"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Reset Password Dialog */}
+      <Dialog open={isResetPasswordDialogOpen} onOpenChange={setIsResetPasswordDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset Password</DialogTitle>
+            <DialogDescription>
+              Set a new password for {selectedUser?.name}.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...resetPasswordForm}>
+            <form onSubmit={resetPasswordForm.handleSubmit(onResetPasswordSubmit)} className="space-y-4">
+              <FormField
+                control={resetPasswordForm.control}
+                name="password"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={resetPasswordForm.control}
+                name="confirmPassword"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Confirm New Password</FormLabel>
+                    <FormControl>
+                      <Input type="password" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsResetPasswordDialogOpen(false)}>
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={resetPasswordMutation.isPending}>
+                  {resetPasswordMutation.isPending ? "Resetting..." : "Reset Password"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete User Dialog */}
+      <Dialog open={isDeleteUserDialogOpen} onOpenChange={setIsDeleteUserDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete User</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete {selectedUser?.name}? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="flex flex-col gap-2 mt-2">
+            <div className="bg-red-50 text-red-800 p-3 rounded-md text-sm">
+              <p className="font-medium">Warning: This is a permanent action</p>
+              <p className="mt-1">Deleting this user will remove all their associated data from the system.</p>
+            </div>
+            
+            <div className="flex items-center mt-4">
+              <p className="font-medium">User:</p>
+              <div className="flex items-center ml-2 gap-2">
+                <Avatar className="h-6 w-6">
+                  <AvatarFallback className="text-xs">
+                    {selectedUser?.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+                  </AvatarFallback>
+                </Avatar>
+                <span>{selectedUser?.name}</span>
+                <Badge className={getRoleBadgeColor(selectedUser?.role || '')}>
+                  {selectedUser?.role?.toUpperCase()}
+                </Badge>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteUserDialogOpen(false)}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={onDeleteUser}
+              disabled={deleteUserMutation.isPending}
+            >
+              {deleteUserMutation.isPending ? "Deleting..." : "Delete User"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </AppLayout>

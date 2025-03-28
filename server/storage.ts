@@ -43,6 +43,7 @@ export interface IStorage {
   getUserByUsername(username: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
+  deleteUser(id: number): Promise<boolean>;
   getAllUsers(): Promise<User[]>;
   getUsersCount(): Promise<number>;
   getUsersByRole(role: string): Promise<User[]>;
@@ -50,6 +51,7 @@ export interface IStorage {
   
   // Department Management
   getDepartment(id: number): Promise<Department | undefined>;
+  getDepartmentByHodId(hodId: number): Promise<Department | undefined>;
   createDepartment(department: InsertDepartment): Promise<Department>;
   updateDepartment(id: number, department: Partial<InsertDepartment>): Promise<Department | undefined>;
   deleteDepartment(id: number): Promise<boolean>;
@@ -238,6 +240,10 @@ export class MemStorage implements IStorage {
     this.users.set(id, updatedUserData);
     return updatedUserData;
   }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    return this.users.delete(id);
+  }
 
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
@@ -260,6 +266,12 @@ export class MemStorage implements IStorage {
   // Department Management
   async getDepartment(id: number): Promise<Department | undefined> {
     return this.departments.get(id);
+  }
+  
+  async getDepartmentByHodId(hodId: number): Promise<Department | undefined> {
+    return Array.from(this.departments.values()).find(
+      (department) => department.hodId === hodId
+    );
   }
 
   async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
@@ -708,10 +720,25 @@ export class DatabaseStorage implements IStorage {
   async getUsersByDepartment(departmentId: number): Promise<User[]> {
     return await db.select().from(users).where(eq(users.departmentId, departmentId));
   }
+  
+  async deleteUser(id: number): Promise<boolean> {
+    try {
+      const result = await db.delete(users).where(eq(users.id, id));
+      return result.rowCount > 0;
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      return false;
+    }
+  }
 
   // Department Management
   async getDepartment(id: number): Promise<Department | undefined> {
     const [department] = await db.select().from(departments).where(eq(departments.id, id));
+    return department || undefined;
+  }
+  
+  async getDepartmentByHodId(hodId: number): Promise<Department | undefined> {
+    const [department] = await db.select().from(departments).where(eq(departments.hodId, hodId));
     return department || undefined;
   }
 

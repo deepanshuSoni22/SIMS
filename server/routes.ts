@@ -1,7 +1,7 @@
 import type { Express, Request, Response, NextFunction } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import { setupAuth } from "./auth";
+import { setupAuth, hashPassword } from "./auth";
 import { 
   insertUserSchema,
   insertDepartmentSchema,
@@ -153,6 +153,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { password, ...userWithoutPassword } = updatedUser;
       res.json(userWithoutPassword);
+    }
+  );
+  
+  // Reset password route
+  app.post(
+    "/api/users/:id/reset-password",
+    checkRole([roles.ADMIN]), // Only admins can reset passwords
+    logActivity("reset-password", "user"),
+    async (req, res) => {
+      try {
+        const userId = parseInt(req.params.id);
+        const { password } = req.body;
+        
+        // Validate userId is a valid number
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID format" });
+        }
+        
+        // Validate password
+        if (!password || typeof password !== 'string' || password.length < 6) {
+          return res.status(400).json({ message: "Password must be at least 6 characters" });
+        }
+        
+        // Check if user exists
+        const existingUser = await storage.getUser(userId);
+        
+        if (!existingUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Hash the new password
+        const hashedPassword = await hashPassword(password);
+        
+        // Update user password
+        const updatedUser = await storage.updateUser(userId, { password: hashedPassword });
+        
+        if (!updatedUser) {
+          return res.status(500).json({ message: "Failed to update password" });
+        }
+        
+        res.status(200).json({ message: "Password reset successfully" });
+      } catch (error) {
+        console.error("Password reset error:", error);
+        res.status(500).json({ message: "An error occurred while resetting the password" });
+      }
+    }
+  );
+  
+  // Delete user route
+  app.delete(
+    "/api/users/:id",
+    checkRole([roles.ADMIN]), // Only admins can delete users
+    logActivity("deleted", "user"),
+    async (req, res) => {
+      try {
+        const userId = parseInt(req.params.id);
+        
+        // Validate userId is a valid number
+        if (isNaN(userId)) {
+          return res.status(400).json({ message: "Invalid user ID format" });
+        }
+        
+        // Check if user exists
+        const existingUser = await storage.getUser(userId);
+        
+        if (!existingUser) {
+          return res.status(404).json({ message: "User not found" });
+        }
+        
+        // Prevent deleting own account
+        if (req.user && req.user.id === userId) {
+          return res.status(400).json({ message: "You cannot delete your own account" });
+        }
+        
+        // Check if user is a HOD with a department
+        if (existingUser.role === roles.HOD) {
+          const department = await storage.getDepartmentByHodId(userId);
+          if (department) {
+            return res.status(400).json({ 
+              message: "This HOD is associated with a department. Please reassign or delete the department first."
+            });
+          }
+        }
+        
+        // Delete the user
+        const success = await storage.deleteUser(userId);
+        
+        if (!success) {
+          return res.status(500).json({ message: "Failed to delete user" });
+        }
+        
+        res.status(200).json({ message: "User deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting user:", error);
+        res.status(500).json({ message: "Server error while deleting user" });
+      }
     }
   );
   
