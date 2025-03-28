@@ -18,10 +18,15 @@ type NavItem = {
 
 export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
   const { user, logoutMutation } = useAuth();
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        // Manually navigate to auth page after successful logout
+        window.location.href = "/auth";
+      }
+    });
   };
 
   const navItems: NavItem[] = [
