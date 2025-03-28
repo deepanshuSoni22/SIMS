@@ -52,6 +52,7 @@ export interface IStorage {
   getDepartment(id: number): Promise<Department | undefined>;
   createDepartment(department: InsertDepartment): Promise<Department>;
   updateDepartment(id: number, department: Partial<InsertDepartment>): Promise<Department | undefined>;
+  deleteDepartment(id: number): Promise<boolean>;
   getAllDepartments(): Promise<Department[]>;
   
   // Subject Management
@@ -275,6 +276,10 @@ export class MemStorage implements IStorage {
     const updatedDepartmentData: Department = { ...existingDepartment, ...updatedDepartment };
     this.departments.set(id, updatedDepartmentData);
     return updatedDepartmentData;
+  }
+
+  async deleteDepartment(id: number): Promise<boolean> {
+    return this.departments.delete(id);
   }
 
   async getAllDepartments(): Promise<Department[]> {
@@ -723,6 +728,13 @@ export class DatabaseStorage implements IStorage {
     return department || undefined;
   }
 
+  async deleteDepartment(id: number): Promise<boolean> {
+    const result = await db.delete(departments)
+      .where(eq(departments.id, id))
+      .returning();
+    return result.length > 0;
+  }
+  
   async getAllDepartments(): Promise<Department[]> {
     return await db.select().from(departments);
   }

@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { 
-  Plus, Search, Building2, RefreshCw, Pencil, Trash2, Users
+  Plus, Search, Building2, RefreshCw, Pencil, Trash2, Users, AlertTriangle
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Button } from "@/components/ui/button";
@@ -17,6 +17,16 @@ import {
 import { 
   Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { 
   Form, FormControl, FormField, FormItem, FormLabel, FormMessage 
 } from "@/components/ui/form";
@@ -28,28 +38,44 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { useToast } from "@/hooks/use-toast";
+import { Badge } from "@/components/ui/badge";
 
-type CreateDepartmentFormValues = z.infer<typeof insertDepartmentSchema>;
+type DepartmentFormValues = z.infer<typeof insertDepartmentSchema>;
 
 export default function DepartmentPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDepartmentDialogOpen, setIsAddDepartmentDialogOpen] = useState(false);
-
+  const [isEditDepartmentDialogOpen, setIsEditDepartmentDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedDepartment, setSelectedDepartment] = useState<Department | null>(null);
+  
   // Fetch all departments
   const { data: departments, isLoading, refetch } = useQuery<Department[]>({
     queryKey: ["/api/departments"],
   });
-
+  
   // Fetch HOD users for selection
   const { data: hodUsers } = useQuery<User[]>({
     queryKey: ["/api/users/role", roles.HOD],
   });
 
+  // Fetch faculty count by department
+  const { data: allUsers } = useQuery<User[]>({
+    queryKey: ["/api/users"],
+  });
+
+  // Count faculty and students for each department
+  const getFacultyCount = (departmentId: number) => {
+    return allUsers?.filter(user => 
+      user.departmentId === departmentId && user.role === roles.FACULTY
+    ).length || 0;
+  };
+
   // Create department mutation
   const createDepartmentMutation = useMutation({
-    mutationFn: async (data: CreateDepartmentFormValues) => {
+    mutationFn: async (data: DepartmentFormValues) => {
       const res = await apiRequest("POST", "/api/departments", data);
       return await res.json();
     },
@@ -72,8 +98,58 @@ export default function DepartmentPage() {
     },
   });
 
+  // Update department mutation
+  const updateDepartmentMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: number, data: DepartmentFormValues }) => {
+      const res = await apiRequest("PATCH", `/api/departments/${id}`, data);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Department updated successfully",
+        description: "The department has been updated in the system.",
+      });
+      // Invalidate departments query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      setIsEditDepartmentDialogOpen(false);
+      setSelectedDepartment(null);
+      editForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update department",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Delete department mutation
+  const deleteDepartmentMutation = useMutation({
+    mutationFn: async (id: number) => {
+      await apiRequest("DELETE", `/api/departments/${id}`);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Department deleted successfully",
+        description: "The department has been removed from the system.",
+      });
+      // Invalidate departments query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      setIsDeleteDialogOpen(false);
+      setSelectedDepartment(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to delete department",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
   // Create department form
-  const form = useForm<CreateDepartmentFormValues>({
+  const form = useForm<DepartmentFormValues>({
     resolver: zodResolver(insertDepartmentSchema),
     defaultValues: {
       name: "",
@@ -81,8 +157,46 @@ export default function DepartmentPage() {
     },
   });
 
-  const onSubmit = (data: CreateDepartmentFormValues) => {
+  // Edit department form
+  const editForm = useForm<DepartmentFormValues>({
+    resolver: zodResolver(insertDepartmentSchema),
+    defaultValues: {
+      name: "",
+      hodId: null,
+    },
+  });
+
+  // Handle opening edit dialog
+  const handleEditDepartment = (department: Department) => {
+    setSelectedDepartment(department);
+    editForm.reset({
+      name: department.name,
+      hodId: department.hodId,
+    });
+    setIsEditDepartmentDialogOpen(true);
+  };
+
+  // Handle opening delete dialog
+  const handleDeleteDepartment = (department: Department) => {
+    setSelectedDepartment(department);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  // Handle form submissions
+  const onSubmit = (data: DepartmentFormValues) => {
     createDepartmentMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: DepartmentFormValues) => {
+    if (selectedDepartment) {
+      updateDepartmentMutation.mutate({ id: selectedDepartment.id, data });
+    }
+  };
+
+  const onDeleteConfirm = () => {
+    if (selectedDepartment) {
+      deleteDepartmentMutation.mutate(selectedDepartment.id);
+    }
   };
 
   // Filter departments based on search query
@@ -161,20 +275,49 @@ export default function DepartmentPage() {
                           </div>
                         </TableCell>
                         <TableCell>
-                          {hod ? hod.name : 'Not Assigned'}
+                          {hod ? (
+                            <div className="flex items-center gap-2">
+                              <span>{hod.name}</span>
+                              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">HOD</Badge>
+                            </div>
+                          ) : (
+                            <span className="text-gray-500">Not Assigned</span>
+                          )}
                         </TableCell>
-                        <TableCell>-</TableCell>
+                        <TableCell>
+                          {getFacultyCount(department.id) > 0 ? (
+                            <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200 border-none">
+                              {getFacultyCount(department.id)}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-500">No faculty</span>
+                          )}
+                        </TableCell>
                         <TableCell>-</TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleEditDepartment(department)}
+                              title="Edit Department"
+                            >
                               <Pencil className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              title="View Department Members"
+                            >
                               <Users className="h-4 w-4" />
                             </Button>
-                            <Button variant="ghost" size="icon">
-                              <Trash2 className="h-4 w-4" />
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => handleDeleteDepartment(department)}
+                              title="Delete Department"
+                            >
+                              <Trash2 className="h-4 w-4 text-red-500" />
                             </Button>
                           </div>
                         </TableCell>
@@ -266,6 +409,107 @@ export default function DepartmentPage() {
           </Form>
         </DialogContent>
       </Dialog>
+
+      {/* Edit Department Dialog */}
+      <Dialog open={isEditDepartmentDialogOpen} onOpenChange={setIsEditDepartmentDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Edit Department</DialogTitle>
+            <DialogDescription>
+              Update department information.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...editForm}>
+            <form onSubmit={editForm.handleSubmit(onEditSubmit)} className="space-y-4">
+              <FormField
+                control={editForm.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Department Name</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Computer Science" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editForm.control}
+                name="hodId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Head of Department</FormLabel>
+                    <Select 
+                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
+                      value={field.value?.toString() || ""}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select HOD" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        <SelectItem value="">Not Assigned</SelectItem>
+                        {hodUsers?.map((hodUser) => (
+                          <SelectItem key={hodUser.id} value={hodUser.id.toString()}>
+                            {hodUser.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => {
+                    setIsEditDepartmentDialogOpen(false);
+                    setSelectedDepartment(null);
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button type="submit" disabled={updateDepartmentMutation.isPending}>
+                  {updateDepartmentMutation.isPending ? "Updating..." : "Update Department"}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Department Confirmation Dialog */}
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-red-500" />
+              Delete Department
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete the department "{selectedDepartment?.name}"? 
+              This action cannot be undone and may affect users assigned to this department.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setSelectedDepartment(null)}>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={onDeleteConfirm}
+              className="bg-red-500 hover:bg-red-600"
+              disabled={deleteDepartmentMutation.isPending}
+            >
+              {deleteDepartmentMutation.isPending ? "Deleting..." : "Delete"}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </AppLayout>
   );
 }

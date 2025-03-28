@@ -204,6 +204,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
   
+  app.delete(
+    "/api/departments/:id", 
+    checkRole([roles.ADMIN]), 
+    logActivity("deleted", "department"),
+    async (req, res) => {
+      const departmentId = parseInt(req.params.id);
+      
+      try {
+        const existingDepartment = await storage.getDepartment(departmentId);
+        
+        if (!existingDepartment) {
+          return res.status(404).json({ message: "Department not found" });
+        }
+        
+        const success = await storage.deleteDepartment(departmentId);
+        
+        if (!success) {
+          return res.status(500).json({ message: "Failed to delete department" });
+        }
+        
+        res.status(200).json({ message: "Department deleted successfully" });
+      } catch (error) {
+        console.error("Error deleting department:", error);
+        res.status(500).json({ message: "Server error while deleting department" });
+      }
+    }
+  );
+  
   // Subject Management Routes
   app.get(
     "/api/subjects", 
