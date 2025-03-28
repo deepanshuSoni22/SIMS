@@ -28,7 +28,7 @@ function Router() {
       <ProtectedRoute 
         path="/users" 
         component={() => <UserManagementPage />} 
-        allowedRoles={[roles.ADMIN]}
+        allowedRoles={[roles.ADMIN, roles.HOD]}
       />
       <ProtectedRoute 
         path="/departments" 

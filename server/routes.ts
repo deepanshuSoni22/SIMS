@@ -133,7 +133,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.patch(
     "/api/users/:id", 
-    checkRole([roles.ADMIN]), 
+    checkRole([roles.ADMIN, roles.HOD]), 
     logActivity("updated", "user"),
     async (req, res) => {
       const userId = parseInt(req.params.id);
@@ -159,7 +159,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Reset password route
   app.post(
     "/api/users/:id/reset-password",
-    checkRole([roles.ADMIN]), // Only admins can reset passwords
+    checkRole([roles.ADMIN, roles.HOD]), // Admins and HODs can reset passwords
     logActivity("reset-password", "user"),
     async (req, res) => {
       try {
@@ -204,7 +204,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Delete user route
   app.delete(
     "/api/users/:id",
-    checkRole([roles.ADMIN]), // Only admins can delete users
+    checkRole([roles.ADMIN, roles.HOD]), // Admins and HODs can delete users
     logActivity("deleted", "user"),
     async (req, res) => {
       try {
