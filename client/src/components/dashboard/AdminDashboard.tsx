@@ -186,60 +186,52 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-medium text-gray-800">Quick Actions</h2>
           </div>
           <div className="p-4 space-y-4">
-            <Link href="/users">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-                <div className="flex items-center">
-                  <div className="bg-primary bg-opacity-10 p-2 rounded-full">
-                    <UserPlus className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-800">Add New User</h3>
-                    <p className="text-xs text-gray-500">Create accounts for staff or students</p>
-                  </div>
+            <Link href="/users" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-primary bg-opacity-10 p-2 rounded-full">
+                  <UserPlus className="h-5 w-5 text-primary" />
                 </div>
-              </a>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">Add New User</h3>
+                  <p className="text-xs text-gray-500">Create accounts for staff or students</p>
+                </div>
+              </div>
             </Link>
             
-            <Link href="/departments">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-                <div className="flex items-center">
-                  <div className="bg-orange-500 bg-opacity-10 p-2 rounded-full">
-                    <Building2 className="h-5 w-5 text-orange-500" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-800">Create Department</h3>
-                    <p className="text-xs text-gray-500">Add a new academic department</p>
-                  </div>
+            <Link href="/departments" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-orange-500 bg-opacity-10 p-2 rounded-full">
+                  <Building2 className="h-5 w-5 text-orange-500" />
                 </div>
-              </a>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">Create Department</h3>
+                  <p className="text-xs text-gray-500">Add a new academic department</p>
+                </div>
+              </div>
             </Link>
             
-            <Link href="/subjects">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-                <div className="flex items-center">
-                  <div className="bg-purple-700 bg-opacity-10 p-2 rounded-full">
-                    <FolderPlus className="h-5 w-5 text-purple-700" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-800">Add New Subject</h3>
-                    <p className="text-xs text-gray-500">Create a new course subject</p>
-                  </div>
+            <Link href="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-purple-700 bg-opacity-10 p-2 rounded-full">
+                  <FolderPlus className="h-5 w-5 text-purple-700" />
                 </div>
-              </a>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">Add New Subject</h3>
+                  <p className="text-xs text-gray-500">Create a new course subject</p>
+                </div>
+              </div>
             </Link>
             
-            <Link href="/reports">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-                <div className="flex items-center">
-                  <div className="bg-green-600 bg-opacity-10 p-2 rounded-full">
-                    <FileBarChart2 className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-800">Generate Reports</h3>
-                    <p className="text-xs text-gray-500">Create attainment reports</p>
-                  </div>
+            <Link href="/reports" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-green-600 bg-opacity-10 p-2 rounded-full">
+                  <FileBarChart2 className="h-5 w-5 text-green-600" />
                 </div>
-              </a>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">Generate Reports</h3>
+                  <p className="text-xs text-gray-500">Create attainment reports</p>
+                </div>
+              </div>
             </Link>
           </div>
         </div>
@@ -264,10 +256,8 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Departments</h2>
-            <Link href="/departments">
-              <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-                View All
-              </a>
+            <Link href="/departments" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+              View All
             </Link>
           </div>
           <div className="p-4 space-y-4">
@@ -316,10 +306,8 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Recently Updated Subjects</h2>
-            <Link href="/subjects">
-              <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-                View All
-              </a>
+            <Link href="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+              View All
             </Link>
           </div>
           <div className="overflow-x-auto">
