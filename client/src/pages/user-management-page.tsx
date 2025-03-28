@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { 
-  Plus, Search, UserCog, UserPlus, Mail, Key, X, Pencil, UserX, Filter, RefreshCw 
+  Plus, Search, UserCog, UserPlus, Mail, Key, X, Pencil, UserX, Filter, RefreshCw, AlertTriangle
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
@@ -95,6 +95,9 @@ export default function UserManagementPage() {
       departmentId: null,
     },
   });
+  
+  // Watch role to conditionally show/hide department selection
+  const selectedUserRole = form.watch("role");
 
   const onSubmit = (data: CreateUserFormValues) => {
     createUserMutation.mutate(data);
@@ -398,14 +401,23 @@ export default function UserManagementPage() {
                 />
               </div>
               
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 gap-4">
                 <FormField
                   control={form.control}
                   name="role"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Role</FormLabel>
-                      <Select onValueChange={field.onChange} value={field.value}>
+                      <Select 
+                        onValueChange={(value) => {
+                          field.onChange(value);
+                          // Reset departmentId to null when selecting Admin or HOD
+                          if (value === roles.ADMIN || value === roles.HOD) {
+                            form.setValue("departmentId", null);
+                          }
+                        }} 
+                        value={field.value}
+                      >
                         <FormControl>
                           <SelectTrigger>
                             <SelectValue placeholder="Select role" />
@@ -423,34 +435,53 @@ export default function UserManagementPage() {
                   )}
                 />
                 
-                <FormField
-                  control={form.control}
-                  name="departmentId"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Department</FormLabel>
-                      <Select 
-                        onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
-                        value={field.value === null ? "none" : field.value?.toString()}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Select department" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="none">None</SelectItem>
-                          {departments?.map((dept) => (
-                            <SelectItem key={dept.id} value={dept.id.toString()}>
-                              {dept.name}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
+                {/* Only show department selection for faculty and students */}
+                {(selectedUserRole === roles.FACULTY || selectedUserRole === roles.STUDENT) && (
+                  <FormField
+                    control={form.control}
+                    name="departmentId"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Department</FormLabel>
+                        <Select 
+                          onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                          value={field.value === null ? "none" : field.value?.toString()}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select department" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="none">None</SelectItem>
+                            {departments?.map((dept) => (
+                              <SelectItem key={dept.id} value={dept.id.toString()}>
+                                {dept.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                        {departments?.length === 0 && (
+                          <p className="text-sm text-yellow-500 mt-1">
+                            No departments found. Create departments first.
+                          </p>
+                        )}
+                      </FormItem>
+                    )}
+                  />
+                )}
+                
+                {/* Show note for HOD users */}
+                {selectedUserRole === roles.HOD && (
+                  <div className="text-sm text-amber-600 flex items-start gap-2 p-2 bg-amber-50 rounded border border-amber-200">
+                    <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-medium">HODs are created without a department</p>
+                      <p className="mt-1">After creating the HOD, go to the Departments page to create a department and assign this HOD.</p>
+                    </div>
+                  </div>
+                )}
               </div>
               
               <DialogFooter>

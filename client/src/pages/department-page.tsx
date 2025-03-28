@@ -393,6 +393,15 @@ export default function DepartmentPage() {
                       </SelectContent>
                     </Select>
                     <FormMessage />
+                    {hodUsers?.length === 0 && (
+                      <div className="text-sm text-amber-600 flex items-start gap-2 p-2 mt-2 bg-amber-50 rounded border border-amber-200">
+                        <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                        <div>
+                          <p className="font-medium">No HODs available</p>
+                          <p className="mt-1">Create a user with HOD role first in the User Management page.</p>
+                        </div>
+                      </div>
+                    )}
                   </FormItem>
                 )}
               />

@@ -80,10 +80,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/users/role/:role", 
     checkRole([roles.ADMIN, roles.HOD]), 
     async (req, res) => {
-      const { role } = req.params;
-      const users = await storage.getUsersByRole(role);
-      const sanitizedUsers = users.map(({ password, ...rest }) => rest);
-      res.json(sanitizedUsers);
+      try {
+        const { role } = req.params;
+        
+        // Validate that role is a valid role
+        if (!Object.values(roles).includes(role as any)) {
+          return res.status(400).json({ message: "Invalid role" });
+        }
+        
+        const users = await storage.getUsersByRole(role);
+        const sanitizedUsers = users.map(({ password, ...rest }) => rest);
+        res.json(sanitizedUsers);
+      } catch (error) {
+        console.error("Error fetching users by role:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
     }
   );
   
