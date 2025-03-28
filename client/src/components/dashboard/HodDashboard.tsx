@@ -19,26 +19,38 @@ export default function HodDashboard() {
 
   // Fetch department
   const { data: department } = useQuery<Department>({
-    queryKey: ["/api/departments", user?.departmentId],
+    queryKey: [`/api/departments/${user?.departmentId}`],
     enabled: !!user?.departmentId,
   });
 
   // Fetch faculty members in the department
   const { data: facultyMembers, isLoading: isFacultyLoading } = useQuery<User[]>({
-    queryKey: ["/api/users/department", user?.departmentId],
+    queryKey: [`/api/users/department/${user?.departmentId}`],
     enabled: !!user?.departmentId,
   });
 
   // Fetch subjects in the department
   const { data: subjects, isLoading: isSubjectsLoading } = useQuery<Subject[]>({
-    queryKey: ["/api/subjects/department", user?.departmentId],
+    queryKey: [`/api/subjects/department/${user?.departmentId}`],
     enabled: !!user?.departmentId,
   });
 
+  // Fetch all users with role=faculty as fallback if department-specific query fails
+  const { data: allFaculty } = useQuery<User[]>({
+    queryKey: [`/api/users/role/faculty`],
+    enabled: !facultyMembers && !!user,
+  });
+
+  // Fetch all subjects as fallback
+  const { data: allSubjects } = useQuery<Subject[]>({
+    queryKey: [`/api/subjects`],
+    enabled: !subjects && !!user,
+  });
+
   // Fetch subject assignments
-  const { data: assignments, isLoading: isAssignmentsLoading } = useQuery<SubjectAssignment[]>({
-    queryKey: ["/api/subject-assignments/department", user?.departmentId],
-    enabled: !!user?.departmentId,
+  const { data: subjectAssignments } = useQuery<SubjectAssignment[]>({
+    queryKey: [`/api/subject-assignments`],
+    enabled: !!user,
   });
 
   // Sample program outcome data for the department
@@ -65,10 +77,21 @@ export default function HodDashboard() {
     { label: "2021-2022", value: "2021-2022" },
   ];
 
-  const completedSubjectsCount = subjects?.filter(s => s.status === "complete").length || 0;
-  const pendingSubjectsCount = subjects?.filter(s => s.status === "pending").length || 0;
-
-  const getRandomPercentage = () => Math.floor(Math.random() * 20) + 70; // 70-90% for demo
+  // Use either department subjects or all subjects
+  const effectiveSubjects = subjects || (allSubjects?.filter(s => s.departmentId === user?.departmentId)) || [];
+  const effectiveFaculty = facultyMembers || (allFaculty?.filter(f => f.departmentId === user?.departmentId)) || [];
+  
+  const completedSubjectsCount = effectiveSubjects.filter(s => s.status === "complete").length || 0;
+  const pendingSubjectsCount = effectiveSubjects.filter(s => s.status === "pending").length || 0;
+  
+  // Count subjects assigned to each faculty
+  const facultySubjectsCount = effectiveFaculty.map(faculty => {
+    const assignedSubjects = subjectAssignments?.filter(assignment => assignment.facultyId === faculty.id) || [];
+    return {
+      facultyId: faculty.id,
+      count: assignedSubjects.length
+    };
+  });
 
   return (
     <div>
@@ -77,13 +100,13 @@ export default function HodDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             title="Faculty Members" 
-            value={facultyMembers?.filter(f => f.role === "faculty").length || 0} 
+            value={effectiveFaculty.filter(f => f.role === "faculty").length || 0} 
             icon={<Users className="h-5 w-5" />} 
             color="primary" 
           />
           <StatCard 
             title="Total Subjects" 
-            value={subjects?.length || 0} 
+            value={effectiveSubjects.length || 0} 
             icon={<BookOpen className="h-5 w-5" />} 
             color="secondary" 
           />
@@ -120,10 +143,8 @@ export default function HodDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Faculty Members</h2>
-            <Link href="/users">
-              <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-                View All
-              </a>
+            <Link to="/users" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+              View All
             </Link>
           </div>
           <div className="overflow-x-auto">
@@ -150,8 +171,8 @@ export default function HodDashboard() {
                       </div>
                     </td>
                   </tr>
-                ) : facultyMembers && facultyMembers.filter(f => f.role === "faculty").length > 0 ? (
-                  facultyMembers.filter(f => f.role === "faculty").map((faculty) => (
+                ) : effectiveFaculty.filter(f => f.role === "faculty").length > 0 ? (
+                  effectiveFaculty.filter(f => f.role === "faculty").map((faculty) => (
                     <tr key={faculty.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
@@ -169,7 +190,7 @@ export default function HodDashboard() {
                         {faculty.username}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        0 {/* This would need to be calculated from assignments */}
+                        {facultySubjectsCount.find(f => f.facultyId === faculty.id)?.count || 0}
                       </td>
                     </tr>
                   ))
@@ -189,10 +210,8 @@ export default function HodDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Department Subjects</h2>
-            <Link href="/subjects">
-              <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-                View All
-              </a>
+            <Link to="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+              View All
             </Link>
           </div>
           <div className="overflow-x-auto">
@@ -219,8 +238,8 @@ export default function HodDashboard() {
                       </div>
                     </td>
                   </tr>
-                ) : subjects && subjects.length > 0 ? (
-                  subjects.slice(0, 5).map((subject) => (
+                ) : effectiveSubjects.length > 0 ? (
+                  effectiveSubjects.slice(0, 5).map((subject) => (
                     <tr key={subject.id}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                         {subject.code}
@@ -261,46 +280,40 @@ export default function HodDashboard() {
             <h2 className="text-lg font-medium text-gray-800">Quick Actions</h2>
           </div>
           <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/subjects">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-                <div className="flex items-center">
-                  <div className="bg-purple-700 bg-opacity-10 p-2 rounded-full">
-                    <FolderPlus className="h-5 w-5 text-purple-700" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-800">Add New Subject</h3>
-                    <p className="text-xs text-gray-500">Create a new course subject</p>
-                  </div>
+            <Link to="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-purple-700 bg-opacity-10 p-2 rounded-full">
+                  <FolderPlus className="h-5 w-5 text-purple-700" />
                 </div>
-              </a>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">Add New Subject</h3>
+                  <p className="text-xs text-gray-500">Create a new course subject</p>
+                </div>
+              </div>
             </Link>
             
-            <Link href="/subjects">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-                <div className="flex items-center">
-                  <div className="bg-primary bg-opacity-10 p-2 rounded-full">
-                    <Users className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-800">Assign Subjects</h3>
-                    <p className="text-xs text-gray-500">Assign subjects to faculty</p>
-                  </div>
+            <Link to="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-primary bg-opacity-10 p-2 rounded-full">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
-              </a>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">Assign Subjects</h3>
+                  <p className="text-xs text-gray-500">Assign subjects to faculty</p>
+                </div>
+              </div>
             </Link>
             
-            <Link href="/reports">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-                <div className="flex items-center">
-                  <div className="bg-green-600 bg-opacity-10 p-2 rounded-full">
-                    <FileBarChart2 className="h-5 w-5 text-green-600" />
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-gray-800">View Reports</h3>
-                    <p className="text-xs text-gray-500">Check attainment reports</p>
-                  </div>
+            <Link to="/reports" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-green-600 bg-opacity-10 p-2 rounded-full">
+                  <FileBarChart2 className="h-5 w-5 text-green-600" />
                 </div>
-              </a>
+                <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">View Reports</h3>
+                  <p className="text-xs text-gray-500">Check attainment reports</p>
+                </div>
+              </div>
             </Link>
           </div>
         </div>
