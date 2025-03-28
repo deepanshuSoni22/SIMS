@@ -375,8 +375,8 @@ export default function DepartmentPage() {
                   <FormItem>
                     <FormLabel>Head of Department</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                      value={field.value?.toString() || ""}
+                      onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))} 
+                      value={field.value === null ? "null" : field.value?.toString() || "null"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -384,7 +384,7 @@ export default function DepartmentPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Not Assigned</SelectItem>
+                        <SelectItem value="null">Not Assigned</SelectItem>
                         {hodUsers?.map((hodUser) => (
                           <SelectItem key={hodUser.id} value={hodUser.id.toString()}>
                             {hodUser.name}
@@ -443,8 +443,8 @@ export default function DepartmentPage() {
                   <FormItem>
                     <FormLabel>Head of Department</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                      value={field.value?.toString() || ""}
+                      onValueChange={(value) => field.onChange(value === "null" ? null : parseInt(value))} 
+                      value={field.value === null ? "null" : field.value?.toString() || "null"}
                     >
                       <FormControl>
                         <SelectTrigger>
@@ -452,7 +452,7 @@ export default function DepartmentPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        <SelectItem value="">Not Assigned</SelectItem>
+                        <SelectItem value="null">Not Assigned</SelectItem>
                         {hodUsers?.map((hodUser) => (
                           <SelectItem key={hodUser.id} value={hodUser.id.toString()}>
                             {hodUser.name}
