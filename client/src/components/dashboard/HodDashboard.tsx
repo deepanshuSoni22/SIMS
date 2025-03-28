@@ -79,7 +79,11 @@ export default function HodDashboard() {
 
   // Use either department subjects or all subjects
   const effectiveSubjects = subjects || (allSubjects?.filter(s => s.departmentId === user?.departmentId)) || [];
-  const effectiveFaculty = facultyMembers || (allFaculty?.filter(f => f.departmentId === user?.departmentId)) || [];
+  
+  // Filter faculty by role and ensure they belong to the user's department
+  const effectiveFaculty = allFaculty?.filter(f => 
+    f.role === "faculty" && f.departmentId === user?.departmentId
+  ) || [];
   
   const completedSubjectsCount = effectiveSubjects.filter(s => s.status === "complete").length || 0;
   const pendingSubjectsCount = effectiveSubjects.filter(s => s.status === "pending").length || 0;
@@ -100,7 +104,7 @@ export default function HodDashboard() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard 
             title="Faculty Members" 
-            value={effectiveFaculty.filter(f => f.role === "faculty").length || 0} 
+            value={effectiveFaculty.length || 0} 
             icon={<Users className="h-5 w-5" />} 
             color="primary" 
           />
@@ -171,8 +175,8 @@ export default function HodDashboard() {
                       </div>
                     </td>
                   </tr>
-                ) : effectiveFaculty.filter(f => f.role === "faculty").length > 0 ? (
-                  effectiveFaculty.filter(f => f.role === "faculty").map((faculty) => (
+                ) : effectiveFaculty.length > 0 ? (
+                  effectiveFaculty.map((faculty) => (
                     <tr key={faculty.id}>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="flex items-center">
