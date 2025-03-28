@@ -275,7 +275,7 @@ export default function HodDashboard() {
             <h2 className="text-lg font-medium text-gray-800">Quick Actions</h2>
           </div>
           <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link to="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/subjects?action=add" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-purple-700 bg-opacity-10 p-2 rounded-full">
                   <FolderPlus className="h-5 w-5 text-purple-700" />
@@ -287,7 +287,7 @@ export default function HodDashboard() {
               </div>
             </Link>
             
-            <Link to="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/subjects?action=assign" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-primary bg-opacity-10 p-2 rounded-full">
                   <Users className="h-5 w-5 text-primary" />

@@ -37,11 +37,16 @@ type AssignSubjectFormValues = z.infer<typeof insertSubjectAssignmentSchema>;
 export default function SubjectPage() {
   const { toast } = useToast();
   const { user } = useAuth();
+  
+  // Get URL parameters
+  const urlParams = new URLSearchParams(window.location.search);
+  const actionParam = urlParams.get('action');
+  
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
   const [activeTab, setActiveTab] = useState("all");
-  const [isAddSubjectDialogOpen, setIsAddSubjectDialogOpen] = useState(false);
-  const [isAssignSubjectDialogOpen, setIsAssignSubjectDialogOpen] = useState(false);
+  const [isAddSubjectDialogOpen, setIsAddSubjectDialogOpen] = useState(actionParam === 'add');
+  const [isAssignSubjectDialogOpen, setIsAssignSubjectDialogOpen] = useState(actionParam === 'assign');
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
   const [isViewFacultyDialogOpen, setIsViewFacultyDialogOpen] = useState(false);
 
