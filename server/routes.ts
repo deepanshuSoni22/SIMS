@@ -103,6 +103,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     checkRole([roles.ADMIN, roles.HOD]), 
     async (req, res) => {
       const userId = parseInt(req.params.id);
+      
+      // Validate userId is a valid number
+      if (isNaN(userId)) {
+        return res.status(400).json({ message: "Invalid user ID format" });
+      }
+      
       const user = await storage.getUser(userId);
       
       if (!user) {
@@ -152,6 +158,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/departments/:id", 
     async (req, res) => {
       const departmentId = parseInt(req.params.id);
+      
+      // Validate departmentId is a valid number
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID format" });
+      }
+      
       const department = await storage.getDepartment(departmentId);
       
       if (!department) {
@@ -187,6 +199,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       const departmentId = parseInt(req.params.id);
       
+      // Validate departmentId is a valid number
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID format" });
+      }
+      
       try {
         const updatedDepartment = await storage.updateDepartment(departmentId, req.body);
         
@@ -210,6 +227,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     logActivity("deleted", "department"),
     async (req, res) => {
       const departmentId = parseInt(req.params.id);
+      
+      // Validate departmentId is a valid number
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID format" });
+      }
       
       try {
         const existingDepartment = await storage.getDepartment(departmentId);
@@ -245,6 +267,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/subjects/department/:departmentId", 
     async (req, res) => {
       const departmentId = parseInt(req.params.departmentId);
+      
+      // Validate departmentId is a valid number
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID format" });
+      }
+      
       const subjects = await storage.getSubjectsByDepartment(departmentId);
       res.json(subjects);
     }
@@ -430,6 +458,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/program-outcomes/department/:departmentId", 
     async (req, res) => {
       const departmentId = parseInt(req.params.departmentId);
+      
+      // Validate departmentId is a valid number
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID format" });
+      }
+      
       const outcomes = await storage.getProgramOutcomesByDepartment(departmentId);
       res.json(outcomes);
     }
@@ -715,6 +749,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     checkRole([roles.ADMIN, roles.HOD, roles.FACULTY]), 
     async (req, res) => {
       const departmentId = parseInt(req.params.departmentId);
+      
+      // Validate departmentId is a valid number
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID format" });
+      }
+      
       const assessments = await storage.getIndirectAssessmentsByDepartment(departmentId);
       res.json(assessments);
     }
@@ -800,6 +840,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     "/api/attainments/department/:departmentId", 
     async (req, res) => {
       const departmentId = parseInt(req.params.departmentId);
+      
+      // Validate departmentId is a valid number
+      if (isNaN(departmentId)) {
+        return res.status(400).json({ message: "Invalid department ID format" });
+      }
+      
       const attainments = await storage.getAttainmentsByDepartment(departmentId);
       res.json(attainments);
     }
@@ -829,6 +875,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     checkRole([roles.ADMIN]), 
     async (req, res) => {
       const limit = req.query.limit ? parseInt(req.query.limit as string) : 20;
+      
+      // Validate limit is a valid number
+      if (req.query.limit && isNaN(limit)) {
+        return res.status(400).json({ message: "Invalid limit parameter format" });
+      }
+      
       const logs = await storage.getRecentActivityLogs(limit);
       res.json(logs);
     }
