@@ -58,7 +58,7 @@ export default function DepartmentPage() {
   
   // Fetch HOD users for selection
   const { data: hodUsers } = useQuery<User[]>({
-    queryKey: ["/api/users/role", roles.HOD],
+    queryKey: [`/api/users/role/${roles.HOD}`],
   });
 
   // Fetch faculty count by department
