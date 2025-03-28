@@ -275,7 +275,7 @@ export default function HodDashboard() {
               </a>
             </Link>
             
-            <Link href="/users">
+            <Link href="/subjects">
               <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
                 <div className="flex items-center">
                   <div className="bg-primary bg-opacity-10 p-2 rounded-full">
