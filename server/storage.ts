@@ -16,8 +16,13 @@ import {
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
+import connectPg from "connect-pg-simple";
+import { db } from "./db";
+import { eq, and } from "drizzle-orm";
+import { Pool } from '@neondatabase/serverless';
 
 const MemoryStore = createMemoryStore(session);
+const PostgresSessionStore = connectPg(session);
 
 // Define the SessionStore type to fix TypeScript errors
 declare module "express-session" {
@@ -638,4 +643,433 @@ export class MemStorage implements IStorage {
   }
 }
 
-export const storage = new MemStorage();
+// Database storage implementation
+export class DatabaseStorage implements IStorage {
+  sessionStore: session.SessionStore;
+  
+  constructor() {
+    // Create a pool for the session store
+    const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+    
+    this.sessionStore = new PostgresSessionStore({
+      pool, 
+      createTableIfMissing: true
+    });
+  }
+
+  // User Management
+  async getUser(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user || undefined;
+  }
+
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+
+  async createUser(insertUser: InsertUser): Promise<User> {
+    const [user] = await db.insert(users).values(insertUser).returning();
+    return user;
+  }
+
+  async updateUser(id: number, updatedUser: Partial<InsertUser>): Promise<User | undefined> {
+    const [user] = await db.update(users)
+      .set(updatedUser)
+      .where(eq(users.id, id))
+      .returning();
+    return user || undefined;
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+
+  async getUsersByRole(role: string): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.role, role));
+  }
+
+  async getUsersByDepartment(departmentId: number): Promise<User[]> {
+    return await db.select().from(users).where(eq(users.departmentId, departmentId));
+  }
+
+  // Department Management
+  async getDepartment(id: number): Promise<Department | undefined> {
+    const [department] = await db.select().from(departments).where(eq(departments.id, id));
+    return department || undefined;
+  }
+
+  async createDepartment(insertDepartment: InsertDepartment): Promise<Department> {
+    const [department] = await db.insert(departments).values(insertDepartment).returning();
+    return department;
+  }
+
+  async updateDepartment(id: number, updatedDepartment: Partial<InsertDepartment>): Promise<Department | undefined> {
+    const [department] = await db.update(departments)
+      .set(updatedDepartment)
+      .where(eq(departments.id, id))
+      .returning();
+    return department || undefined;
+  }
+
+  async getAllDepartments(): Promise<Department[]> {
+    return await db.select().from(departments);
+  }
+
+  // Subject Management
+  async getSubject(id: number): Promise<Subject | undefined> {
+    const [subject] = await db.select().from(subjects).where(eq(subjects.id, id));
+    return subject || undefined;
+  }
+
+  async getSubjectByCode(code: string): Promise<Subject | undefined> {
+    const [subject] = await db.select().from(subjects).where(eq(subjects.code, code));
+    return subject || undefined;
+  }
+
+  async createSubject(insertSubject: InsertSubject): Promise<Subject> {
+    const [subject] = await db.insert(subjects).values(insertSubject).returning();
+    return subject;
+  }
+
+  async updateSubject(id: number, updatedSubject: Partial<InsertSubject>): Promise<Subject | undefined> {
+    const [subject] = await db.update(subjects)
+      .set(updatedSubject)
+      .where(eq(subjects.id, id))
+      .returning();
+    return subject || undefined;
+  }
+
+  async getAllSubjects(): Promise<Subject[]> {
+    return await db.select().from(subjects);
+  }
+
+  async getSubjectsByDepartment(departmentId: number): Promise<Subject[]> {
+    return await db.select().from(subjects).where(eq(subjects.departmentId, departmentId));
+  }
+
+  async getSubjectsByFaculty(facultyId: number): Promise<Subject[]> {
+    const assignments = await db.select()
+      .from(subjectAssignments)
+      .where(eq(subjectAssignments.facultyId, facultyId));
+    
+    if (assignments.length === 0) return [];
+    
+    const subjectIds = assignments.map(a => a.subjectId);
+    return await db.select()
+      .from(subjects)
+      .where(subjects.id.in(subjectIds));
+  }
+
+  // Subject Assignment Management
+  async getSubjectAssignment(id: number): Promise<SubjectAssignment | undefined> {
+    const [assignment] = await db.select()
+      .from(subjectAssignments)
+      .where(eq(subjectAssignments.id, id));
+    return assignment || undefined;
+  }
+
+  async createSubjectAssignment(insertAssignment: InsertSubjectAssignment): Promise<SubjectAssignment> {
+    const [assignment] = await db.insert(subjectAssignments)
+      .values(insertAssignment)
+      .returning();
+    return assignment;
+  }
+
+  async deleteSubjectAssignment(id: number): Promise<boolean> {
+    const result = await db.delete(subjectAssignments)
+      .where(eq(subjectAssignments.id, id))
+      .returning();
+    return result.length > 0;
+  }
+
+  async getSubjectAssignmentsBySubject(subjectId: number): Promise<SubjectAssignment[]> {
+    return await db.select()
+      .from(subjectAssignments)
+      .where(eq(subjectAssignments.subjectId, subjectId));
+  }
+
+  async getSubjectAssignmentsByFaculty(facultyId: number): Promise<SubjectAssignment[]> {
+    return await db.select()
+      .from(subjectAssignments)
+      .where(eq(subjectAssignments.facultyId, facultyId));
+  }
+
+  // Course Outcome Management
+  async getCourseOutcome(id: number): Promise<CourseOutcome | undefined> {
+    const [outcome] = await db.select()
+      .from(courseOutcomes)
+      .where(eq(courseOutcomes.id, id));
+    return outcome || undefined;
+  }
+
+  async createCourseOutcome(insertOutcome: InsertCourseOutcome): Promise<CourseOutcome> {
+    const [outcome] = await db.insert(courseOutcomes)
+      .values(insertOutcome)
+      .returning();
+    return outcome;
+  }
+
+  async updateCourseOutcome(id: number, updatedOutcome: Partial<InsertCourseOutcome>): Promise<CourseOutcome | undefined> {
+    const [outcome] = await db.update(courseOutcomes)
+      .set(updatedOutcome)
+      .where(eq(courseOutcomes.id, id))
+      .returning();
+    return outcome || undefined;
+  }
+
+  async getCourseOutcomesBySubject(subjectId: number): Promise<CourseOutcome[]> {
+    return await db.select()
+      .from(courseOutcomes)
+      .where(eq(courseOutcomes.subjectId, subjectId));
+  }
+
+  // Program Outcome Management
+  async getProgramOutcome(id: number): Promise<ProgramOutcome | undefined> {
+    const [outcome] = await db.select()
+      .from(programOutcomes)
+      .where(eq(programOutcomes.id, id));
+    return outcome || undefined;
+  }
+
+  async createProgramOutcome(insertOutcome: InsertProgramOutcome): Promise<ProgramOutcome> {
+    const [outcome] = await db.insert(programOutcomes)
+      .values(insertOutcome)
+      .returning();
+    return outcome;
+  }
+
+  async updateProgramOutcome(id: number, updatedOutcome: Partial<InsertProgramOutcome>): Promise<ProgramOutcome | undefined> {
+    const [outcome] = await db.update(programOutcomes)
+      .set(updatedOutcome)
+      .where(eq(programOutcomes.id, id))
+      .returning();
+    return outcome || undefined;
+  }
+
+  async getProgramOutcomesByDepartment(departmentId: number): Promise<ProgramOutcome[]> {
+    return await db.select()
+      .from(programOutcomes)
+      .where(eq(programOutcomes.departmentId, departmentId));
+  }
+
+  // CO-PO Mapping Management
+  async getCoPOMapping(id: number): Promise<CoPOMapping | undefined> {
+    const [mapping] = await db.select()
+      .from(coPOMappings)
+      .where(eq(coPOMappings.id, id));
+    return mapping || undefined;
+  }
+
+  async createCoPOMapping(insertMapping: InsertCoPOMapping): Promise<CoPOMapping> {
+    const [mapping] = await db.insert(coPOMappings)
+      .values(insertMapping)
+      .returning();
+    return mapping;
+  }
+
+  async updateCoPOMapping(id: number, updatedMapping: Partial<InsertCoPOMapping>): Promise<CoPOMapping | undefined> {
+    const [mapping] = await db.update(coPOMappings)
+      .set(updatedMapping)
+      .where(eq(coPOMappings.id, id))
+      .returning();
+    return mapping || undefined;
+  }
+
+  async getCoPOMappingsByCourseOutcome(courseOutcomeId: number): Promise<CoPOMapping[]> {
+    return await db.select()
+      .from(coPOMappings)
+      .where(eq(coPOMappings.courseOutcomeId, courseOutcomeId));
+  }
+
+  async getCoPOMappingsByProgramOutcome(programOutcomeId: number): Promise<CoPOMapping[]> {
+    return await db.select()
+      .from(coPOMappings)
+      .where(eq(coPOMappings.programOutcomeId, programOutcomeId));
+  }
+
+  // Course Plan Management
+  async getCoursePlan(id: number): Promise<CoursePlan | undefined> {
+    const [plan] = await db.select()
+      .from(coursePlans)
+      .where(eq(coursePlans.id, id));
+    return plan || undefined;
+  }
+
+  async createCoursePlan(insertPlan: InsertCoursePlan): Promise<CoursePlan> {
+    const [plan] = await db.insert(coursePlans)
+      .values(insertPlan)
+      .returning();
+    return plan;
+  }
+
+  async updateCoursePlan(id: number, updatedPlan: Partial<InsertCoursePlan>): Promise<CoursePlan | undefined> {
+    const [plan] = await db.update(coursePlans)
+      .set(updatedPlan)
+      .where(eq(coursePlans.id, id))
+      .returning();
+    return plan || undefined;
+  }
+
+  async getCoursePlanBySubject(subjectId: number): Promise<CoursePlan | undefined> {
+    const [plan] = await db.select()
+      .from(coursePlans)
+      .where(eq(coursePlans.subjectId, subjectId));
+    return plan || undefined;
+  }
+
+  async getCoursePlansByFaculty(facultyId: number): Promise<CoursePlan[]> {
+    return await db.select()
+      .from(coursePlans)
+      .where(eq(coursePlans.facultyId, facultyId));
+  }
+
+  // Direct Assessment Management
+  async getDirectAssessment(id: number): Promise<DirectAssessment | undefined> {
+    const [assessment] = await db.select()
+      .from(directAssessments)
+      .where(eq(directAssessments.id, id));
+    return assessment || undefined;
+  }
+
+  async createDirectAssessment(insertAssessment: InsertDirectAssessment): Promise<DirectAssessment> {
+    const [assessment] = await db.insert(directAssessments)
+      .values(insertAssessment)
+      .returning();
+    return assessment;
+  }
+
+  async getDirectAssessmentsBySubject(subjectId: number): Promise<DirectAssessment[]> {
+    return await db.select()
+      .from(directAssessments)
+      .where(eq(directAssessments.subjectId, subjectId));
+  }
+
+  // Student Assessment Marks Management
+  async getStudentAssessmentMark(id: number): Promise<StudentAssessmentMarks | undefined> {
+    const [mark] = await db.select()
+      .from(studentAssessmentMarks)
+      .where(eq(studentAssessmentMarks.id, id));
+    return mark || undefined;
+  }
+
+  async createStudentAssessmentMark(insertMark: InsertStudentAssessmentMarks): Promise<StudentAssessmentMarks> {
+    const [mark] = await db.insert(studentAssessmentMarks)
+      .values(insertMark)
+      .returning();
+    return mark;
+  }
+
+  async updateStudentAssessmentMark(id: number, updatedMark: Partial<InsertStudentAssessmentMarks>): Promise<StudentAssessmentMarks | undefined> {
+    const [mark] = await db.update(studentAssessmentMarks)
+      .set(updatedMark)
+      .where(eq(studentAssessmentMarks.id, id))
+      .returning();
+    return mark || undefined;
+  }
+
+  async getStudentAssessmentMarksByAssessment(assessmentId: number): Promise<StudentAssessmentMarks[]> {
+    return await db.select()
+      .from(studentAssessmentMarks)
+      .where(eq(studentAssessmentMarks.assessmentId, assessmentId));
+  }
+
+  async getStudentAssessmentMarksByStudent(studentId: number): Promise<StudentAssessmentMarks[]> {
+    return await db.select()
+      .from(studentAssessmentMarks)
+      .where(eq(studentAssessmentMarks.studentId, studentId));
+  }
+
+  // Indirect Assessment Management
+  async getIndirectAssessment(id: number): Promise<IndirectAssessment | undefined> {
+    const [assessment] = await db.select()
+      .from(indirectAssessments)
+      .where(eq(indirectAssessments.id, id));
+    return assessment || undefined;
+  }
+
+  async createIndirectAssessment(insertAssessment: InsertIndirectAssessment): Promise<IndirectAssessment> {
+    const [assessment] = await db.insert(indirectAssessments)
+      .values(insertAssessment)
+      .returning();
+    return assessment;
+  }
+
+  async getIndirectAssessmentsByDepartment(departmentId: number): Promise<IndirectAssessment[]> {
+    return await db.select()
+      .from(indirectAssessments)
+      .where(eq(indirectAssessments.departmentId, departmentId));
+  }
+
+  // Student Response Management
+  async getStudentResponse(id: number): Promise<StudentResponse | undefined> {
+    const [response] = await db.select()
+      .from(studentResponses)
+      .where(eq(studentResponses.id, id));
+    return response || undefined;
+  }
+
+  async createStudentResponse(insertResponse: InsertStudentResponse): Promise<StudentResponse> {
+    const [response] = await db.insert(studentResponses)
+      .values(insertResponse)
+      .returning();
+    return response;
+  }
+
+  async getStudentResponsesByAssessment(assessmentId: number): Promise<StudentResponse[]> {
+    return await db.select()
+      .from(studentResponses)
+      .where(eq(studentResponses.assessmentId, assessmentId));
+  }
+
+  async getStudentResponsesByStudent(studentId: number): Promise<StudentResponse[]> {
+    return await db.select()
+      .from(studentResponses)
+      .where(eq(studentResponses.studentId, studentId));
+  }
+
+  // Attainment Management
+  async getAttainment(id: number): Promise<Attainment | undefined> {
+    const [attainment] = await db.select()
+      .from(attainments)
+      .where(eq(attainments.id, id));
+    return attainment || undefined;
+  }
+
+  async createAttainment(insertAttainment: InsertAttainment): Promise<Attainment> {
+    const [attainment] = await db.insert(attainments)
+      .values(insertAttainment)
+      .returning();
+    return attainment;
+  }
+
+  async getAttainmentsBySubject(subjectId: number): Promise<Attainment[]> {
+    return await db.select()
+      .from(attainments)
+      .where(eq(attainments.subjectId, subjectId));
+  }
+
+  async getAttainmentsByDepartment(departmentId: number): Promise<Attainment[]> {
+    return await db.select()
+      .from(attainments)
+      .where(eq(attainments.departmentId, departmentId));
+  }
+
+  // Activity Logging
+  async createActivityLog(insertLog: InsertActivityLog): Promise<ActivityLog> {
+    const [log] = await db.insert(activityLogs)
+      .values(insertLog)
+      .returning();
+    return log;
+  }
+
+  async getRecentActivityLogs(limit: number): Promise<ActivityLog[]> {
+    return await db.select()
+      .from(activityLogs)
+      .orderBy(activityLogs.createdAt)
+      .limit(limit);
+  }
+}
+
+// Export an instance of the DatabaseStorage
+export const storage = new DatabaseStorage();
