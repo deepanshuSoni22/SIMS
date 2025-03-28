@@ -96,8 +96,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     onSuccess: () => {
       // Clear user data from the cache
       queryClient.setQueryData(["/api/user"], null);
-      // Invalidate all queries to refresh data after logout
-      queryClient.invalidateQueries();
+      // Invalidate specific queries - using proper structure for TanStack Query v5
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
       
       toast({
         title: "Logged out",
