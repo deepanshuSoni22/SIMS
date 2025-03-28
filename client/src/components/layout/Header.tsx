@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
+import soundaryaLogo from "../../assets/soundarya_logo.png";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -44,9 +45,12 @@ export default function Header({ toggleSidebar, title }: HeaderProps) {
           >
             <Menu className="h-5 w-5 text-gray-500" />
           </Button>
-          <h1 className="ml-3 lg:ml-0 text-lg lg:text-xl font-medium text-gray-800">
-            {title}
-          </h1>
+          <div className="flex items-center">
+            <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-10 w-auto mr-3 hidden md:block" />
+            <h1 className="ml-3 lg:ml-0 text-lg lg:text-xl font-medium text-gray-800">
+              {title}
+            </h1>
+          </div>
         </div>
         <div className="flex items-center">
           <div className="relative">

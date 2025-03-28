@@ -3,6 +3,7 @@ import { useLocation, Link } from "wouter";
 import { LogOut } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import soundaryaLogo from "../../assets/soundarya_logo.png";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -101,9 +102,10 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* App Logo */}
-          <div className="bg-primary p-4 text-white flex items-center justify-center h-16">
-            <h1 className="text-xl font-medium">COPO System</h1>
+          {/* App Logo with Soundarya Logo */}
+          <div className="bg-primary p-2 text-white flex flex-col items-center justify-center">
+            <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-16 w-auto mb-1" />
+            <h1 className="text-lg font-medium">COPO System</h1>
           </div>
           
           {/* User Profile */}
