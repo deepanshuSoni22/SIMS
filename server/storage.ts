@@ -70,6 +70,7 @@ export interface IStorage {
   getSubjectAssignment(id: number): Promise<SubjectAssignment | undefined>;
   createSubjectAssignment(assignment: InsertSubjectAssignment): Promise<SubjectAssignment>;
   deleteSubjectAssignment(id: number): Promise<boolean>;
+  getAllSubjectAssignments(): Promise<SubjectAssignment[]>;
   getSubjectAssignmentsBySubject(subjectId: number): Promise<SubjectAssignment[]>;
   getSubjectAssignmentsByFaculty(facultyId: number): Promise<SubjectAssignment[]>;
   
@@ -370,6 +371,10 @@ export class MemStorage implements IStorage {
     return Array.from(this.subjectAssignments.values()).filter(
       assignment => assignment.subjectId === subjectId
     );
+  }
+
+  async getAllSubjectAssignments(): Promise<SubjectAssignment[]> {
+    return Array.from(this.subjectAssignments.values());
   }
 
   async getSubjectAssignmentsByFaculty(facultyId: number): Promise<SubjectAssignment[]> {
@@ -832,6 +837,10 @@ export class DatabaseStorage implements IStorage {
       .where(eq(subjectAssignments.id, id))
       .returning();
     return result.length > 0;
+  }
+
+  async getAllSubjectAssignments(): Promise<SubjectAssignment[]> {
+    return await db.select().from(subjectAssignments);
   }
 
   async getSubjectAssignmentsBySubject(subjectId: number): Promise<SubjectAssignment[]> {

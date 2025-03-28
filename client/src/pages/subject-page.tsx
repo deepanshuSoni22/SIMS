@@ -1,13 +1,13 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth, roles } from "@/hooks/use-auth";
-import { Department, Subject, User, insertSubjectSchema, insertSubjectAssignmentSchema } from "@shared/schema";
+import { Department, Subject, User as UserType, SubjectAssignment, insertSubjectSchema, insertSubjectAssignmentSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { 
-  Plus, Search, BookOpen, RefreshCw, Pencil, Trash2, FileText, UserPlus
+  Plus, Search, BookOpen, RefreshCw, Pencil, Trash2, FileText, UserPlus, User
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
@@ -55,8 +55,13 @@ export default function SubjectPage() {
   });
 
   // Fetch faculty users for assignment
-  const { data: facultyUsers } = useQuery<User[]>({
+  const { data: facultyUsers } = useQuery<UserType[]>({
     queryKey: [`/api/users/role/${roles.FACULTY}`],
+  });
+  
+  // Fetch subject assignments to display assigned faculty
+  const { data: subjectAssignments } = useQuery<SubjectAssignment[]>({
+    queryKey: ["/api/subject-assignments"],
   });
 
   // Create subject mutation
@@ -256,13 +261,14 @@ export default function SubjectPage() {
                   <TableHead>Semester</TableHead>
                   <TableHead>Academic Year</TableHead>
                   <TableHead>Status</TableHead>
+                  <TableHead>Faculty</TableHead>
                   <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {isLoading ? (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
+                    <TableCell colSpan={8} className="text-center py-10">
                       <div className="flex justify-center">
                         <div className="animate-spin h-8 w-8 border-4 border-primary border-t-transparent rounded-full"></div>
                       </div>
@@ -271,6 +277,8 @@ export default function SubjectPage() {
                 ) : filteredSubjects && filteredSubjects.length > 0 ? (
                   filteredSubjects.map((subject) => {
                     const department = departments?.find(d => d.id === subject.departmentId);
+                    const assignment = subjectAssignments?.find(a => a.subjectId === subject.id);
+                    const assignedFaculty = assignment ? facultyUsers?.find(f => f.id === assignment.facultyId) : undefined;
                     
                     return (
                       <TableRow key={subject.id}>
@@ -285,6 +293,16 @@ export default function SubjectPage() {
                         <TableCell>{subject.semester}</TableCell>
                         <TableCell>{subject.academicYear}</TableCell>
                         <TableCell>{getStatusBadge(subject.status)}</TableCell>
+                        <TableCell>
+                          {assignedFaculty ? (
+                            <div className="flex items-center gap-2">
+                              <User className="h-4 w-4 text-gray-500" />
+                              <span>{assignedFaculty.name}</span>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400 italic text-sm">Not assigned</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {canAssignSubject && (
@@ -329,7 +347,7 @@ export default function SubjectPage() {
                   })
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center py-10">
+                    <TableCell colSpan={8} className="text-center py-10">
                       <p className="text-gray-500">No subjects found</p>
                       {(searchQuery || selectedDepartment || activeTab !== "all") && (
                         <p className="text-gray-400 text-sm mt-1">

@@ -452,6 +452,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Subject Assignment Routes
   app.get(
+    "/api/subject-assignments", 
+    async (req, res) => {
+      const assignments = await storage.getAllSubjectAssignments();
+      res.json(assignments);
+    }
+  );
+
+  app.get(
     "/api/subject-assignments/subject/:subjectId", 
     checkRole([roles.ADMIN, roles.HOD]), 
     async (req, res) => {
