@@ -7,7 +7,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { 
-  Plus, Search, BookOpen, RefreshCw, Pencil, Trash2, FileText, UserPlus, User
+  Plus, Search, BookOpen, RefreshCw, Pencil, Trash2, FileText, UserPlus, User, Users
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
@@ -43,6 +43,7 @@ export default function SubjectPage() {
   const [isAddSubjectDialogOpen, setIsAddSubjectDialogOpen] = useState(false);
   const [isAssignSubjectDialogOpen, setIsAssignSubjectDialogOpen] = useState(false);
   const [selectedSubject, setSelectedSubject] = useState<Subject | null>(null);
+  const [isViewFacultyDialogOpen, setIsViewFacultyDialogOpen] = useState(false);
 
   // Fetch all subjects
   const { data: subjects, isLoading, refetch } = useQuery<Subject[]>({
@@ -165,6 +166,11 @@ export default function SubjectPage() {
     setSelectedSubject(subject);
     assignForm.setValue("subjectId", subject.id);
     setIsAssignSubjectDialogOpen(true);
+  };
+  
+  const handleViewFacultyClick = (subject: Subject) => {
+    setSelectedSubject(subject);
+    setIsViewFacultyDialogOpen(true);
   };
 
   const getStatusBadge = (status: string) => {
@@ -294,10 +300,25 @@ export default function SubjectPage() {
                         <TableCell>{subject.academicYear}</TableCell>
                         <TableCell>{getStatusBadge(subject.status)}</TableCell>
                         <TableCell>
-                          {assignedFaculty ? (
-                            <div className="flex items-center gap-2">
-                              <User className="h-4 w-4 text-gray-500" />
-                              <span>{assignedFaculty.name}</span>
+                          {assignment ? (
+                            <div className="flex flex-col gap-1">
+                              <div className="flex items-center gap-2">
+                                <User className="h-4 w-4 text-gray-500" />
+                                <span>{assignedFaculty?.name || 'Unknown Faculty'}</span>
+                              </div>
+                              {/* Show a count if multiple faculty are assigned */}
+                              {subjectAssignments?.filter(a => a.subjectId === subject.id).length > 1 && (
+                                <Button 
+                                  variant="link" 
+                                  className="text-xs text-blue-500 ml-6 p-0 h-auto"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleViewFacultyClick(subject);
+                                  }}
+                                >
+                                  +{subjectAssignments.filter(a => a.subjectId === subject.id).length - 1} more
+                                </Button>
+                              )}
                             </div>
                           ) : (
                             <span className="text-gray-400 italic text-sm">Not assigned</span>
@@ -306,14 +327,26 @@ export default function SubjectPage() {
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             {canAssignSubject && (
-                              <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                title="Assign to Faculty"
-                                onClick={() => handleAssignClick(subject)}
-                              >
-                                <UserPlus className="h-4 w-4" />
-                              </Button>
+                              <>
+                                <Button 
+                                  variant="ghost" 
+                                  size="icon" 
+                                  title="Assign to Faculty"
+                                  onClick={() => handleAssignClick(subject)}
+                                >
+                                  <UserPlus className="h-4 w-4" />
+                                </Button>
+                                {subjectAssignments?.filter(a => a.subjectId === subject.id).length > 0 && (
+                                  <Button 
+                                    variant="ghost" 
+                                    size="icon" 
+                                    title="View Assigned Faculty"
+                                    onClick={() => handleViewFacultyClick(subject)}
+                                  >
+                                    <Users className="h-4 w-4" />
+                                  </Button>
+                                )}
+                              </>
                             )}
                             <Button 
                               variant="ghost" 
@@ -582,6 +615,73 @@ export default function SubjectPage() {
               </DialogFooter>
             </form>
           </Form>
+        </DialogContent>
+      </Dialog>
+
+      {/* View Faculty Dialog */}
+      <Dialog open={isViewFacultyDialogOpen} onOpenChange={setIsViewFacultyDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Faculty Members</DialogTitle>
+            <DialogDescription>
+              {selectedSubject ? (
+                <>All faculty members assigned to <strong>{selectedSubject.name}</strong></>
+              ) : (
+                <>Faculty members assigned to this subject</>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="mt-4">
+            {selectedSubject && (
+              <div className="space-y-4">
+                {subjectAssignments?.filter(a => a.subjectId === selectedSubject.id).length > 0 ? (
+                  <div className="space-y-2">
+                    {subjectAssignments
+                      ?.filter(a => a.subjectId === selectedSubject.id)
+                      .map(assignment => {
+                        const faculty = facultyUsers?.find(f => f.id === assignment.facultyId);
+                        return (
+                          <div key={assignment.id} className="flex items-center gap-3 p-3 rounded-md border">
+                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                              <User className="h-5 w-5 text-primary" />
+                            </div>
+                            <div>
+                              <p className="font-medium">{faculty?.name || 'Unknown Faculty'}</p>
+                              <p className="text-sm text-gray-500">{faculty?.username || 'No username'}</p>
+                            </div>
+                          </div>
+                        );
+                      })}
+                  </div>
+                ) : (
+                  <div className="text-center py-4">
+                    <p className="text-gray-500">No faculty members assigned to this subject</p>
+                  </div>
+                )}
+                
+                {canAssignSubject && (
+                  <div className="flex justify-end gap-2 mt-6">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setIsViewFacultyDialogOpen(false)}
+                    >
+                      Close
+                    </Button>
+                    <Button 
+                      onClick={() => {
+                        setIsViewFacultyDialogOpen(false);
+                        handleAssignClick(selectedSubject);
+                      }}
+                    >
+                      <UserPlus className="h-4 w-4 mr-2" />
+                      Assign Another Faculty
+                    </Button>
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
         </DialogContent>
       </Dialog>
     </AppLayout>
