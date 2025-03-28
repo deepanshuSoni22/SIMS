@@ -23,29 +23,20 @@ export default function HodDashboard() {
     enabled: !!user?.departmentId,
   });
 
-  // Fetch faculty members in the department
-  const { data: facultyMembers, isLoading: isFacultyLoading } = useQuery<User[]>({
-    queryKey: [`/api/users/department/${user?.departmentId}`],
-    enabled: !!user?.departmentId,
+  // Fetch all users
+  const { data: allUsers, isLoading: isFacultyLoading } = useQuery<User[]>({
+    queryKey: [`/api/users`],
+    enabled: !!user,
   });
 
-  // Fetch subjects in the department
-  const { data: subjects, isLoading: isSubjectsLoading } = useQuery<Subject[]>({
-    queryKey: [`/api/subjects/department/${user?.departmentId}`],
-    enabled: !!user?.departmentId,
-  });
-
-  // Fetch all users with role=faculty as fallback if department-specific query fails
-  const { data: allFaculty } = useQuery<User[]>({
-    queryKey: [`/api/users/role/faculty`],
-    enabled: !facultyMembers && !!user,
-  });
-
-  // Fetch all subjects as fallback
-  const { data: allSubjects } = useQuery<Subject[]>({
+  // Fetch all subjects
+  const { data: allSubjects, isLoading: isSubjectsLoading } = useQuery<Subject[]>({
     queryKey: [`/api/subjects`],
-    enabled: !subjects && !!user,
+    enabled: !!user,
   });
+
+  // Subjects filtered by department
+  const subjects = allSubjects?.filter(s => s.departmentId === user?.departmentId);
 
   // Fetch subject assignments
   const { data: subjectAssignments } = useQuery<SubjectAssignment[]>({
@@ -77,11 +68,11 @@ export default function HodDashboard() {
     { label: "2021-2022", value: "2021-2022" },
   ];
 
-  // Use either department subjects or all subjects
-  const effectiveSubjects = subjects || (allSubjects?.filter(s => s.departmentId === user?.departmentId)) || [];
+  // Use subjects filtered by department
+  const effectiveSubjects = subjects || [];
   
   // Filter faculty by role and ensure they belong to the user's department
-  const effectiveFaculty = allFaculty?.filter(f => 
+  const effectiveFaculty = allUsers?.filter(f => 
     f.role === "faculty" && f.departmentId === user?.departmentId
   ) || [];
   
