@@ -56,7 +56,7 @@ export default function SubjectPage() {
 
   // Fetch faculty users for assignment
   const { data: facultyUsers } = useQuery<User[]>({
-    queryKey: ["/api/users/role", roles.FACULTY],
+    queryKey: [`/api/users/role/${roles.FACULTY}`],
   });
 
   // Create subject mutation
@@ -145,7 +145,7 @@ export default function SubjectPage() {
         subject.code.toLowerCase().includes(searchQuery.toLowerCase())
       : true;
     
-    const matchesDepartment = selectedDepartment 
+    const matchesDepartment = selectedDepartment && selectedDepartment !== "all"
       ? subject.departmentId === parseInt(selectedDepartment)
       : true;
     
@@ -205,7 +205,7 @@ export default function SubjectPage() {
                   <SelectValue placeholder="All Departments" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Departments</SelectItem>
+                  <SelectItem value="all">All Departments</SelectItem>
                   {departments?.map((dept) => (
                     <SelectItem key={dept.id} value={dept.id.toString()}>
                       {dept.name}
