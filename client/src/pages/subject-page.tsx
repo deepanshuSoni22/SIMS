@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth, roles } from "@/hooks/use-auth";
 import { Department, Subject, User as UserType, SubjectAssignment, insertSubjectSchema, insertSubjectAssignmentSchema } from "@shared/schema";
@@ -41,6 +41,7 @@ export default function SubjectPage() {
   // Get URL parameters
   const urlParams = new URLSearchParams(window.location.search);
   const actionParam = urlParams.get('action');
+  const subjectIdParam = urlParams.get('subjectId');
   
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedDepartment, setSelectedDepartment] = useState<string>("");
@@ -52,7 +53,7 @@ export default function SubjectPage() {
 
   // Fetch all subjects
   const { data: subjects, isLoading, refetch } = useQuery<Subject[]>({
-    queryKey: ["/api/subjects"],
+    queryKey: ["/api/subjects"]
   });
 
   // Fetch departments for selection
@@ -98,18 +99,31 @@ export default function SubjectPage() {
   // Assign subject mutation
   const assignSubjectMutation = useMutation({
     mutationFn: async (data: AssignSubjectFormValues) => {
+      console.log("Mutation called with data:", data);
       const res = await apiRequest("POST", "/api/subject-assignments", data);
       return await res.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Subject assignment successful:", data);
+      
+      // Get the faculty name for the success message
+      const faculty = facultyUsers?.find(f => f.id === data.facultyId);
+      const subject = subjects?.find(s => s.id === data.subjectId);
+      
       toast({
         title: "Subject assigned successfully",
-        description: "The subject has been assigned to the faculty member.",
+        description: `${subject?.name} has been assigned to ${faculty?.name}.`,
       });
+      
+      // Update local state
+      queryClient.invalidateQueries({ queryKey: ["/api/subject-assignments"] });
+      
+      // Close dialog and reset form
       setIsAssignSubjectDialogOpen(false);
       assignForm.reset();
     },
     onError: (error: Error) => {
+      console.error("Subject assignment failed:", error);
       toast({
         title: "Failed to assign subject",
         description: error.message,
@@ -146,8 +160,54 @@ export default function SubjectPage() {
   };
 
   const onSubmitAssignment = (data: AssignSubjectFormValues) => {
-    assignSubjectMutation.mutate(data);
+    console.log("Form data being submitted:", data);
+    
+    // Check that both required fields are filled
+    if (!data.subjectId || !data.facultyId) {
+      toast({
+        title: "Missing information",
+        description: "Please select both a subject and a faculty member",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Make sure assignedBy is set
+    const formData = {
+      ...data,
+      assignedBy: user?.id || data.assignedBy // Ensure assignedBy is set even if form didn't update it
+    };
+    
+    console.log("Final form data to submit:", formData);
+    
+    // Check for existing assignment to avoid duplicates
+    const existingAssignment = subjectAssignments?.find(
+      a => a.subjectId === formData.subjectId && a.facultyId === formData.facultyId
+    );
+    
+    if (existingAssignment) {
+      toast({
+        title: "Already assigned",
+        description: "This faculty member is already assigned to this subject.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    assignSubjectMutation.mutate(formData);
   };
+  
+  // Handle URL parameters when subjects are loaded
+  useEffect(() => {
+    if (subjects && subjectIdParam && actionParam === 'assign') {
+      const subjectId = parseInt(subjectIdParam);
+      const subject = subjects.find((s) => s.id === subjectId);
+      if (subject) {
+        setSelectedSubject(subject);
+        assignForm.setValue("subjectId", subject.id);
+      }
+    }
+  }, [subjects, subjectIdParam, actionParam, assignForm]);
 
   // Filter subjects based on search query, selected department, and status
   const filteredSubjects = subjects?.filter(subject => {
@@ -168,8 +228,13 @@ export default function SubjectPage() {
   });
 
   const handleAssignClick = (subject: Subject) => {
+    console.log("Assigning subject:", subject);
     setSelectedSubject(subject);
     assignForm.setValue("subjectId", subject.id);
+    
+    // Ensure all values are set correctly in the form
+    assignForm.setValue("assignedBy", user?.id || 0);
+    
     setIsAssignSubjectDialogOpen(true);
   };
   
@@ -575,13 +640,51 @@ export default function SubjectPage() {
               {selectedSubject ? (
                 <>Assign <strong>{selectedSubject.name}</strong> to a faculty member.</>
               ) : (
-                <>Assign this subject to a faculty member.</>
+                <>Please click on a subject first to assign it to a faculty member.</>
               )}
             </DialogDescription>
           </DialogHeader>
           
+          {!selectedSubject && (
+            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
+              No subject selected. Either select a subject from the list or close this dialog and try again.
+            </div>
+          )}
+          
           <Form {...assignForm}>
             <form onSubmit={assignForm.handleSubmit(onSubmitAssignment)} className="space-y-4">
+              {selectedSubject && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-md mb-4">
+                  <p className="text-sm text-blue-700">
+                    <strong>Selected Subject:</strong> {selectedSubject.code} - {selectedSubject.name}
+                  </p>
+                </div>
+              )}
+              
+              {/* Hidden field for subjectId */}
+              <input 
+                type="hidden" 
+                {...assignForm.register("subjectId")}
+              />
+              
+              {/* Hidden field for assignedBy */}
+              <input 
+                type="hidden" 
+                {...assignForm.register("assignedBy")}
+              />
+              
+              {/* Debug information */}
+              <div className="text-xs text-gray-500 mb-4 p-2 bg-gray-50 rounded border">
+                <details>
+                  <summary>Debug Information</summary>
+                  <div className="mt-2 space-y-1">
+                    <p><strong>Subject ID:</strong> {assignForm.getValues("subjectId")}</p>
+                    <p><strong>Assigned By:</strong> {assignForm.getValues("assignedBy")}</p>
+                    <p><strong>Form State:</strong> {JSON.stringify(assignForm.formState.errors)}</p>
+                  </div>
+                </details>
+              </div>
+              
               <FormField
                 control={assignForm.control}
                 name="facultyId"
@@ -589,7 +692,10 @@ export default function SubjectPage() {
                   <FormItem>
                     <FormLabel>Faculty Member</FormLabel>
                     <Select 
-                      onValueChange={(value) => field.onChange(parseInt(value))} 
+                      onValueChange={(value) => {
+                        console.log("Selected faculty ID:", value);
+                        field.onChange(parseInt(value));
+                      }} 
                       value={field.value ? field.value.toString() : ""}
                     >
                       <FormControl>
