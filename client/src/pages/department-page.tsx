@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth, roles } from "@/hooks/use-auth";
-import { Department, User, insertDepartmentSchema } from "@shared/schema";
+import { Department, User, Subject, insertDepartmentSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -66,10 +66,22 @@ export default function DepartmentPage() {
     queryKey: ["/api/users"],
   });
 
+  // Fetch all subjects
+  const { data: allSubjects } = useQuery<Subject[]>({
+    queryKey: ["/api/subjects"],
+  });
+
   // Count faculty and students for each department
   const getFacultyCount = (departmentId: number) => {
     return allUsers?.filter(user => 
       user.departmentId === departmentId && user.role === roles.FACULTY
+    ).length || 0;
+  };
+  
+  // Count subjects for each department
+  const getSubjectsCount = (departmentId: number) => {
+    return allSubjects?.filter(subject => 
+      subject.departmentId === departmentId
     ).length || 0;
   };
 
@@ -293,7 +305,15 @@ export default function DepartmentPage() {
                             <span className="text-gray-500">No faculty</span>
                           )}
                         </TableCell>
-                        <TableCell>-</TableCell>
+                        <TableCell>
+                          {getSubjectsCount(department.id) > 0 ? (
+                            <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-200 border-none">
+                              {getSubjectsCount(department.id)}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-500">No subjects</span>
+                          )}
+                        </TableCell>
                         <TableCell className="text-right">
                           <div className="flex justify-end gap-2">
                             <Button 
