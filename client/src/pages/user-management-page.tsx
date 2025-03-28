@@ -655,22 +655,7 @@ export default function UserManagementPage() {
                   />
                 )}
                 
-                {/* Show note for HOD users */}
-                {selectedUserRole === roles.HOD && (
-                  <div className="text-sm text-blue-600 flex flex-col items-start gap-3 p-4 bg-blue-50 rounded border border-blue-200">
-                    <div className="flex items-start gap-2">
-                      <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-500" />
-                      <div>
-                        <p className="font-medium">HOD Department Assignment Information</p>
-                        <p className="mt-1">HOD users are created first, then assigned to departments. You can continue creating the HOD now.</p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2 w-full justify-between">
-                      <p className="text-xs text-blue-500">This is a two-step process for security reasons.</p>
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                    </div>
-                  </div>
-                )}
+                {/* Previously had a warning for HOD users - now removed */}
               </div>
               
               <DialogFooter>
@@ -791,22 +776,7 @@ export default function UserManagementPage() {
                 />
               )}
               
-              {/* Show note for HOD users */}
-              {editUserForm.watch("role") === roles.HOD && (
-                <div className="text-sm text-blue-600 flex flex-col items-start gap-3 p-4 bg-blue-50 rounded border border-blue-200">
-                  <div className="flex items-start gap-2">
-                    <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-500" />
-                    <div>
-                      <p className="font-medium">HOD Department Assignment Information</p>
-                      <p className="mt-1">HOD users are updated first, then assigned to departments. You can continue updating the HOD now.</p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2 w-full justify-between">
-                    <p className="text-xs text-blue-500">Go to Departments page to assign or change department.</p>
-                    <ArrowUpRight className="h-4 w-4 text-blue-500" />
-                  </div>
-                </div>
-              )}
+              {/* Previously had a warning for HOD users - now removed */}
               
               <DialogFooter>
                 <Button type="button" variant="outline" onClick={() => setIsEditUserDialogOpen(false)}>
