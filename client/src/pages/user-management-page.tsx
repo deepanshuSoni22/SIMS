@@ -7,7 +7,8 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { 
-  Plus, Search, UserCog, UserPlus, Mail, Key, X, Pencil, UserX, Filter, RefreshCw, AlertTriangle
+  Plus, Search, UserCog, UserPlus, Mail, Key, X, Pencil, UserX, Filter, RefreshCw, 
+  AlertTriangle, Info, CheckCircle, ArrowUpRight
 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 import { Badge } from "@/components/ui/badge";
@@ -656,11 +657,17 @@ export default function UserManagementPage() {
                 
                 {/* Show note for HOD users */}
                 {selectedUserRole === roles.HOD && (
-                  <div className="text-sm text-amber-600 flex items-start gap-2 p-2 bg-amber-50 rounded border border-amber-200">
-                    <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                    <div>
-                      <p className="font-medium">HODs are created without a department</p>
-                      <p className="mt-1">After creating the HOD, go to the Departments page to create a department and assign this HOD.</p>
+                  <div className="text-sm text-blue-600 flex flex-col items-start gap-3 p-4 bg-blue-50 rounded border border-blue-200">
+                    <div className="flex items-start gap-2">
+                      <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-500" />
+                      <div>
+                        <p className="font-medium">HOD Department Assignment Information</p>
+                        <p className="mt-1">HOD users are created first, then assigned to departments. You can continue creating the HOD now.</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 w-full justify-between">
+                      <p className="text-xs text-blue-500">This is a two-step process for security reasons.</p>
+                      <CheckCircle className="h-4 w-4 text-green-500" />
                     </div>
                   </div>
                 )}
@@ -786,11 +793,17 @@ export default function UserManagementPage() {
               
               {/* Show note for HOD users */}
               {editUserForm.watch("role") === roles.HOD && (
-                <div className="text-sm text-amber-600 flex items-start gap-2 p-2 bg-amber-50 rounded border border-amber-200">
-                  <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
-                  <div>
-                    <p className="font-medium">HODs are assigned to departments separately</p>
-                    <p className="mt-1">After updating the HOD, go to the Departments page to assign this HOD to a department.</p>
+                <div className="text-sm text-blue-600 flex flex-col items-start gap-3 p-4 bg-blue-50 rounded border border-blue-200">
+                  <div className="flex items-start gap-2">
+                    <Info className="h-5 w-5 flex-shrink-0 mt-0.5 text-blue-500" />
+                    <div>
+                      <p className="font-medium">HOD Department Assignment Information</p>
+                      <p className="mt-1">HOD users are updated first, then assigned to departments. You can continue updating the HOD now.</p>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2 w-full justify-between">
+                    <p className="text-xs text-blue-500">Go to Departments page to assign or change department.</p>
+                    <ArrowUpRight className="h-4 w-4 text-blue-500" />
                   </div>
                 </div>
               )}
