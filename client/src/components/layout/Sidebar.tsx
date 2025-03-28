@@ -134,9 +134,9 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                     href={item.path}
                     onClick={() => closeSidebar()}
                   >
-                    <a 
+                    <div 
                       className={cn(
-                        "flex items-center px-3 py-2 text-sm font-medium rounded-md",
+                        "flex items-center px-3 py-2 text-sm font-medium rounded-md cursor-pointer",
                         isActive 
                           ? "bg-primary bg-opacity-10 text-primary" 
                           : "text-gray-600 hover:bg-gray-100"
@@ -149,7 +149,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                         {item.icon}
                       </span>
                       {item.title}
-                    </a>
+                    </div>
                   </Link>
                 );
               })}
