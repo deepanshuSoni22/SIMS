@@ -11,6 +11,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import soundaryaLogo from "../assets/soundarya_logo.png";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -76,11 +77,13 @@ export default function AuthPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-2">
-              <div className="bg-primary p-2 rounded-full text-white">
-                <School className="h-8 w-8" />
-              </div>
+              <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-24 w-auto" />
             </div>
-            <CardTitle className="text-2xl text-center font-bold">COPO Management System</CardTitle>
+            <CardTitle className="text-2xl text-center font-bold">
+              <div className="text-purple-700">SOUNDARYA</div>
+              <div className="text-amber-700 text-lg">INSTITUTE OF MANAGEMENT AND SCIENCE</div>
+              <div className="text-primary mt-2">COPO Management System</div>
+            </CardTitle>
             <CardDescription className="text-center">
               Enter your credentials to access your account
             </CardDescription>
@@ -238,28 +241,35 @@ export default function AuthPage() {
       </div>
 
       {/* Right side - Hero */}
-      <div className="w-full md:w-1/2 bg-primary hidden md:flex flex-col justify-center items-center p-8 text-white">
+      <div className="w-full md:w-1/2 bg-gradient-to-br from-purple-700 via-purple-600 to-amber-700 hidden md:flex flex-col justify-center items-center p-8 text-white">
         <div className="max-w-md text-center">
-          <h1 className="text-3xl font-bold mb-4">
-            Educational Management System
+          <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-32 w-auto mx-auto mb-6" />
+          <h1 className="text-3xl font-bold mb-2">
+            SOUNDARYA
           </h1>
+          <h2 className="text-2xl font-semibold mb-4">
+            INSTITUTE OF MANAGEMENT AND SCIENCE
+          </h2>
+          <h3 className="text-2xl font-bold mb-4 bg-white/10 p-3 rounded-lg">
+            COPO Management System
+          </h3>
           <p className="text-xl mb-6">
             Efficiently track course outcomes, program outcomes, and attainments
           </p>
           <div className="grid grid-cols-2 gap-4">
-            <div className="p-4 bg-white/10 rounded-lg">
+            <div className="p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
               <h3 className="font-semibold mb-2">For Faculty</h3>
               <p className="text-sm">Create course plans and track student progress with ease</p>
             </div>
-            <div className="p-4 bg-white/10 rounded-lg">
+            <div className="p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
               <h3 className="font-semibold mb-2">For HODs</h3>
               <p className="text-sm">Assign subjects and monitor department performance</p>
             </div>
-            <div className="p-4 bg-white/10 rounded-lg">
+            <div className="p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
               <h3 className="font-semibold mb-2">For Students</h3>
               <p className="text-sm">View course progress and assessment results</p>
             </div>
-            <div className="p-4 bg-white/10 rounded-lg">
+            <div className="p-4 bg-white/10 rounded-lg hover:bg-white/20 transition-colors">
               <h3 className="font-semibold mb-2">For Administrators</h3>
               <p className="text-sm">Comprehensive oversight of institution-wide outcomes</p>
             </div>
