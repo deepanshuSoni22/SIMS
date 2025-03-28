@@ -11,6 +11,7 @@ import CoursePlanPage from "@/pages/course-plan-page";
 import AttainmentPage from "@/pages/attainment-page";
 import ReportPage from "@/pages/report-page";
 import { roles } from "@shared/schema";
+import { AuthProvider } from "./hooks/use-auth";
 
 function Router() {
   return (
@@ -61,10 +62,10 @@ function Router() {
 
 function App() {
   return (
-    <>
+    <AuthProvider>
       <Router />
       <Toaster />
-    </>
+    </AuthProvider>
   );
 }
 

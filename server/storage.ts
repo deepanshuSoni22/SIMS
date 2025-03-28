@@ -19,6 +19,19 @@ import createMemoryStore from "memorystore";
 
 const MemoryStore = createMemoryStore(session);
 
+// Define the SessionStore type to fix TypeScript errors
+declare module "express-session" {
+  interface SessionStore {
+    all: (callback: (err: any, sessions?: session.SessionData[] | { [sid: string]: session.SessionData }) => void) => void;
+    destroy: (sid: string, callback?: (err?: any) => void) => void;
+    clear: (callback?: (err?: any) => void) => void;
+    length?: (callback: (err: any, length?: number) => void) => void;
+    get: (sid: string, callback: (err: any, session?: session.SessionData | null) => void) => void;
+    set: (sid: string, session: session.SessionData, callback?: (err?: any) => void) => void;
+    touch: (sid: string, session: session.SessionData, callback?: (err?: any) => void) => void;
+  }
+}
+
 export interface IStorage {
   // User Management
   getUser(id: number): Promise<User | undefined>;
