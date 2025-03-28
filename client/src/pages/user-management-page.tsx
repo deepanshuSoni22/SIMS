@@ -430,8 +430,8 @@ export default function UserManagementPage() {
                     <FormItem>
                       <FormLabel>Department</FormLabel>
                       <Select 
-                        onValueChange={(value) => field.onChange(value ? parseInt(value) : null)} 
-                        value={field.value?.toString() || ""}
+                        onValueChange={(value) => field.onChange(value === "none" ? null : parseInt(value))} 
+                        value={field.value === null ? "none" : field.value?.toString()}
                       >
                         <FormControl>
                           <SelectTrigger>
@@ -439,7 +439,7 @@ export default function UserManagementPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="">None</SelectItem>
+                          <SelectItem value="none">None</SelectItem>
                           {departments?.map((dept) => (
                             <SelectItem key={dept.id} value={dept.id.toString()}>
                               {dept.name}
