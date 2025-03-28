@@ -42,7 +42,12 @@ export default function AuthPage() {
   });
 
   const handleLoginSubmit = (data: LoginFormValues) => {
-    loginMutation.mutate(data);
+    loginMutation.mutate(data, {
+      onSuccess: () => {
+        // Navigate to dashboard on successful login
+        window.location.href = '/dashboard';
+      }
+    });
   };
 
   // Register form
@@ -59,7 +64,12 @@ export default function AuthPage() {
   });
 
   const handleRegisterSubmit = (data: RegisterFormValues) => {
-    registerMutation.mutate(data);
+    registerMutation.mutate(data, {
+      onSuccess: () => {
+        // Navigate to dashboard on successful registration
+        window.location.href = '/dashboard';
+      }
+    });
   };
 
   return (
