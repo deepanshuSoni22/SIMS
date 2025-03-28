@@ -121,6 +121,15 @@ export default function SubjectPage() {
       // Close dialog and reset form
       setIsAssignSubjectDialogOpen(false);
       assignForm.reset();
+      
+      // If there's a URL parameter, update it
+      if (actionParam === 'assign' && subjectIdParam) {
+        // Remove query params from URL without refreshing the page
+        const url = new URL(window.location.href);
+        url.searchParams.delete('action');
+        url.searchParams.delete('subjectId');
+        window.history.replaceState({}, '', url.toString());
+      }
     },
     onError: (error: Error) => {
       console.error("Subject assignment failed:", error);
@@ -205,9 +214,22 @@ export default function SubjectPage() {
       if (subject) {
         setSelectedSubject(subject);
         assignForm.setValue("subjectId", subject.id);
+        setIsAssignSubjectDialogOpen(true);
+      } else {
+        // Subject ID was not found - show a warning
+        toast({
+          title: "Subject not found",
+          description: "The requested subject could not be found.",
+          variant: "destructive",
+        });
       }
+    } else if (actionParam === 'assign' && !subjectIdParam && subjects && subjects.length > 0) {
+      // If action=assign but no subject specified, auto-select the first subject
+      setSelectedSubject(subjects[0]);
+      assignForm.setValue("subjectId", subjects[0].id);
+      setIsAssignSubjectDialogOpen(true);
     }
-  }, [subjects, subjectIdParam, actionParam, assignForm]);
+  }, [subjects, subjectIdParam, actionParam, assignForm, toast]);
 
   // Filter subjects based on search query, selected department, and status
   const filteredSubjects = subjects?.filter(subject => {
@@ -646,8 +668,13 @@ export default function SubjectPage() {
           </DialogHeader>
           
           {!selectedSubject && (
-            <div className="mb-4 p-3 bg-amber-50 border border-amber-200 rounded-md text-amber-700 text-sm">
-              No subject selected. Either select a subject from the list or close this dialog and try again.
+            <div className="mb-4 p-4 bg-amber-50 border border-amber-200 rounded-md text-amber-700">
+              <h4 className="font-medium mb-1">No subject selected</h4>
+              <p className="text-sm">Please close this dialog and either:</p>
+              <ul className="text-sm list-disc pl-5 mt-1 space-y-1">
+                <li>Click the "Assign to Faculty" button (👤+) next to a subject in the table</li>
+                <li>Or use the HOD Dashboard's "Assign Subjects" quick action button</li>
+              </ul>
             </div>
           )}
           

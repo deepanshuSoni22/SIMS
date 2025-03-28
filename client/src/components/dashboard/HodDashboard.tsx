@@ -287,7 +287,10 @@ export default function HodDashboard() {
               </div>
             </Link>
             
-            <Link to="/subjects?action=assign" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to={subjects && subjects.length > 0 
+                  ? `/subjects?action=assign&subjectId=${subjects[0].id}` 
+                  : "/subjects"} 
+              className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-primary bg-opacity-10 p-2 rounded-full">
                   <Users className="h-5 w-5 text-primary" />
