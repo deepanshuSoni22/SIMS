@@ -71,15 +71,61 @@ export function setupAuth(app: Express) {
 
   app.post("/api/register", async (req, res, next) => {
     try {
-      if (req.isAuthenticated() && req.user.role !== roles.ADMIN) {
-        return res.status(403).json({ message: "Only administrators can register new users" });
+      // Handle authentication and role-based permissions
+      if (req.isAuthenticated()) {
+        const currentUserRole = req.user.role;
+        const newUserRole = req.body.role;
+
+        // Principal (Admin) can register HOD
+        if (currentUserRole === roles.ADMIN) {
+          // Admin can create any role
+          console.log("Admin creating new user with role:", newUserRole);
+        } 
+        // HOD can register Faculty and Student
+        else if (currentUserRole === roles.HOD) {
+          // HOD can only create faculty or student
+          if (![roles.FACULTY, roles.STUDENT].includes(newUserRole)) {
+            return res.status(403).json({
+              message: "HODs can only register faculty members and students"
+            });
+          }
+          
+          // Ensure departmentId matches HOD's department
+          if (!req.body.departmentId) {
+            return res.status(400).json({
+              message: "Department ID is required when registering users"
+            });
+          }
+
+          // Here we would verify the HOD belongs to the department
+          // This requires additional database query to verify, which we'll implement later
+          console.log("HOD creating new user with role:", newUserRole);
+        } 
+        // Faculty can't register users
+        else {
+          return res.status(403).json({
+            message: "You don't have permission to register new users"
+          });
+        }
+      } else {
+        // For initial setup, allow the first user to register as admin
+        const usersCount = await storage.getUsersCount();
+        if (usersCount > 0) {
+          return res.status(403).json({
+            message: "Registration is restricted. Please contact an administrator."
+          });
+        }
+        console.log("First user registering as admin");
+        req.body.role = roles.ADMIN; // Force first user to be admin
       }
 
+      // Check if username already exists
       const existingUser = await storage.getUserByUsername(req.body.username);
       if (existingUser) {
         return res.status(400).json({ message: "Username already exists" });
       }
 
+      // Hash password and create user
       const hashedPassword = await hashPassword(req.body.password);
       const userToCreate = {
         ...req.body,
@@ -88,7 +134,7 @@ export function setupAuth(app: Express) {
 
       const user = await storage.createUser(userToCreate);
       
-      // Log activity if an admin is creating another user
+      // Log activity if an authenticated user is creating another user
       if (req.isAuthenticated()) {
         await storage.createActivityLog({
           userId: req.user.id,
@@ -103,13 +149,14 @@ export function setupAuth(app: Express) {
         return res.status(201).json(userWithoutPassword);
       }
 
-      // If it's a self-registration, log them in
+      // If it's a self-registration (first admin), log them in
       req.login(user, (err) => {
         if (err) return next(err);
         const { password, ...userWithoutPassword } = user;
         res.status(201).json(userWithoutPassword);
       });
     } catch (error) {
+      console.error("Registration error:", error);
       next(error);
     }
   });

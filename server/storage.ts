@@ -18,7 +18,7 @@ import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, and } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { Pool } from '@neondatabase/serverless';
 
 const MemoryStore = createMemoryStore(session);
@@ -44,6 +44,7 @@ export interface IStorage {
   createUser(user: InsertUser): Promise<User>;
   updateUser(id: number, user: Partial<InsertUser>): Promise<User | undefined>;
   getAllUsers(): Promise<User[]>;
+  getUsersCount(): Promise<number>;
   getUsersByRole(role: string): Promise<User[]>;
   getUsersByDepartment(departmentId: number): Promise<User[]>;
   
@@ -239,6 +240,10 @@ export class MemStorage implements IStorage {
 
   async getAllUsers(): Promise<User[]> {
     return Array.from(this.users.values());
+  }
+
+  async getUsersCount(): Promise<number> {
+    return this.users.size;
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
@@ -685,6 +690,12 @@ export class DatabaseStorage implements IStorage {
     return await db.select().from(users);
   }
 
+  async getUsersCount(): Promise<number> {
+    // Use a different approach to count users
+    const allUsers = await db.select().from(users);
+    return allUsers.length;
+  }
+
   async getUsersByRole(role: string): Promise<User[]> {
     return await db.select().from(users).where(eq(users.role, role));
   }
@@ -755,10 +766,11 @@ export class DatabaseStorage implements IStorage {
     
     if (assignments.length === 0) return [];
     
-    const subjectIds = assignments.map(a => a.subjectId);
-    return await db.select()
-      .from(subjects)
-      .where(subjects.id.in(subjectIds));
+    // Get all subjects and filter them manually
+    const allSubjects = await db.select().from(subjects);
+    const subjectIds = new Set(assignments.map(a => a.subjectId));
+    
+    return allSubjects.filter(subject => subjectIds.has(subject.id));
   }
 
   // Subject Assignment Management
