@@ -452,12 +452,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Add endpoint for teaching users (Faculty + HOD)
   app.get(
-    "/api/users/teaching",
+    "/api/users/teaching", 
     async (req, res) => {
       try {
         // Get both faculty and HOD users for subject assignments
-        const facultyUsers = await storage.getUsersByRole(roles.FACULTY);
-        const hodUsers = await storage.getUsersByRole(roles.HOD);
+        const facultyUsers = await storage.getUsersByRole(roles.FACULTY) || [];
+        const hodUsers = await storage.getUsersByRole(roles.HOD) || [];
         
         // Explicitly cast users to avoid issues with password property
         const sanitizedFacultyUsers = facultyUsers.map(user => ({

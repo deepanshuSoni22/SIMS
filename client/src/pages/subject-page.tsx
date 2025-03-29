@@ -65,15 +65,7 @@ export default function SubjectPage() {
   const { data: teachingUsers, isError: teachingUsersError } = useQuery<UserType[]>({
     queryKey: ["/api/users/teaching"],
     retry: 3,
-    retryDelay: 1000,
-    onError: (error) => {
-      console.error("Error fetching teaching users:", error);
-      toast({
-        title: "Error loading users",
-        description: "There was a problem loading teaching users. Please try again.",
-        variant: "destructive"
-      });
-    }
+    retryDelay: 1000
   });
   
   // Fetch subject assignments to display assigned faculty
@@ -743,11 +735,15 @@ export default function SubjectPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {teachingUsers?.map((faculty) => (
-                          <SelectItem key={faculty.id} value={faculty.id.toString()}>
-                            {faculty.name} {faculty.role === roles.HOD ? "(HOD)" : ""}
-                          </SelectItem>
-                        ))}
+                        {teachingUsers && teachingUsers.length > 0 ? (
+                          teachingUsers.map((faculty) => (
+                            <SelectItem key={faculty.id} value={faculty.id.toString()}>
+                              {faculty.name} {faculty.role === roles.HOD ? "(HOD)" : ""}
+                            </SelectItem>
+                          ))
+                        ) : (
+                          <SelectItem value="no-faculty">No faculty available</SelectItem>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
