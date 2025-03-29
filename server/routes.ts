@@ -20,6 +20,14 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
+// Authentication middleware
+const requireAuth = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+};
+
 // Middleware for role-based access control
 const checkRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -453,6 +461,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add endpoint for teaching users (Faculty + HOD)
   app.get(
     "/api/users/teaching",
+    requireAuth, // Add authentication middleware
     async (req, res) => {
       try {
         // Get both faculty and HOD users for subject assignments
@@ -490,6 +499,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subject Assignment Routes
   app.get(
     "/api/subject-assignments", 
+    requireAuth, // Add authentication middleware
     async (req, res) => {
       const assignments = await storage.getAllSubjectAssignments();
       res.json(assignments);
