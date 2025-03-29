@@ -277,7 +277,7 @@ export default function SubjectPage() {
   };
 
   const canCreateSubject = user?.role === roles.ADMIN || user?.role === roles.HOD;
-  const canAssignSubject = user?.role === roles.ADMIN || user?.role === roles.HOD;
+  const canAssignSubject = user?.role === roles.HOD;
 
   return (
     <AppLayout title="Subjects">
