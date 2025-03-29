@@ -33,7 +33,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
   const navItems: NavItem[] = [
     { 
       title: "Dashboard", 
-      icon: "dashboard", 
+      icon: "home", 
       path: "/dashboard", 
       allowedRoles: [roles.ADMIN, roles.HOD, roles.FACULTY, roles.STUDENT] 
     },
@@ -144,19 +144,30 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                   >
                     <div 
                       className={cn(
-                        "flex items-center px-3 py-2 text-sm font-medium rounded-md cursor-pointer",
+                        "flex items-center px-3 py-2.5 text-sm font-medium rounded-md cursor-pointer",
                         isActive 
-                          ? "bg-primary bg-opacity-10 text-primary" 
-                          : "text-gray-600 hover:bg-gray-100"
+                          ? "bg-primary bg-opacity-20 text-primary" 
+                          : item.title === "Dashboard" 
+                          ? "text-primary-foreground bg-primary hover:bg-primary/90"
+                          : "text-gray-700 hover:bg-gray-100"
                       )}
                     >
                       <span className={cn(
                         "material-icons mr-3",
-                        isActive ? "text-primary" : "text-gray-500"
+                        isActive 
+                          ? "text-primary" 
+                          : item.title === "Dashboard" 
+                          ? "text-white" 
+                          : "text-gray-600"
                       )}>
                         {item.icon}
                       </span>
-                      {item.title}
+                      <span className={cn(
+                        "font-medium",
+                        item.title === "Dashboard" && !isActive && "text-white"
+                      )}>
+                        {item.title}
+                      </span>
                     </div>
                   </Link>
                 );
