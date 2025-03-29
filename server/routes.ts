@@ -459,10 +459,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const facultyUsers = await storage.getUsersByRole(roles.FACULTY);
         const hodUsers = await storage.getUsersByRole(roles.HOD);
         
-        // Combine and sanitize the users (remove password)
-        const teachingUsers = [...facultyUsers, ...hodUsers].map(
-          ({ password, ...rest }) => rest
-        );
+        // Explicitly cast users to avoid issues with password property
+        const sanitizedFacultyUsers = facultyUsers.map(user => ({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          role: user.role,
+          departmentId: user.departmentId
+        }));
+
+        const sanitizedHodUsers = hodUsers.map(user => ({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          role: user.role,
+          departmentId: user.departmentId
+        }));
+        
+        // Combine the sanitized users
+        const teachingUsers = [...sanitizedFacultyUsers, ...sanitizedHodUsers];
         
         res.json(teachingUsers);
       } catch (error) {
