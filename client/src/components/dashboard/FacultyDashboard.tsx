@@ -100,10 +100,8 @@ export default function FacultyDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Assigned Subjects</h2>
-            <Link href="/subjects">
-              <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            <Link to="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
                 View All
-              </a>
             </Link>
           </div>
           <div className="overflow-x-auto">
@@ -174,10 +172,8 @@ export default function FacultyDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Course Plans</h2>
-            <Link href="/course-plans">
-              <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            <Link to="/course-plans" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
                 View All
-              </a>
             </Link>
           </div>
           <div className="overflow-x-auto">
@@ -231,10 +227,8 @@ export default function FacultyDashboard() {
                           {new Date(plan.lastUpdated).toLocaleDateString()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          <Link href={`/course-plans/${plan.id}`}>
-                            <a className="text-primary hover:text-blue-700">
-                              <PenSquare className="h-4 w-4 inline" />
-                            </a>
+                          <Link to={`/course-plans/${plan.id}`} className="text-primary hover:text-blue-700">
+                            <PenSquare className="h-4 w-4 inline" />
                           </Link>
                         </td>
                       </tr>
@@ -260,8 +254,7 @@ export default function FacultyDashboard() {
             <h2 className="text-lg font-medium text-gray-800">Quick Actions</h2>
           </div>
           <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link href="/course-plans/new">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/course-plans/new" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
                 <div className="flex items-center">
                   <div className="bg-primary bg-opacity-10 p-2 rounded-full">
                     <FileText className="h-5 w-5 text-primary" />
@@ -271,11 +264,9 @@ export default function FacultyDashboard() {
                     <p className="text-xs text-gray-500">Prepare a new course plan</p>
                   </div>
                 </div>
-              </a>
             </Link>
             
-            <Link href="/attainments">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/attainments" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
                 <div className="flex items-center">
                   <div className="bg-orange-500 bg-opacity-10 p-2 rounded-full">
                     <ClipboardCheck className="h-5 w-5 text-orange-500" />
@@ -285,11 +276,9 @@ export default function FacultyDashboard() {
                     <p className="text-xs text-gray-500">Update direct assessments</p>
                   </div>
                 </div>
-              </a>
             </Link>
             
-            <Link href="/reports">
-              <a className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/reports" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
                 <div className="flex items-center">
                   <div className="bg-green-600 bg-opacity-10 p-2 rounded-full">
                     <BarChart2 className="h-5 w-5 text-green-600" />
@@ -299,7 +288,6 @@ export default function FacultyDashboard() {
                     <p className="text-xs text-gray-500">Check attainment reports</p>
                   </div>
                 </div>
-              </a>
             </Link>
           </div>
         </div>

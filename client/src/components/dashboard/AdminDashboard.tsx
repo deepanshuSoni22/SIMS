@@ -186,7 +186,7 @@ export default function AdminDashboard() {
             <h2 className="text-lg font-medium text-gray-800">Quick Actions</h2>
           </div>
           <div className="p-4 space-y-4">
-            <Link href="/users" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/users" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-primary bg-opacity-10 p-2 rounded-full">
                   <UserPlus className="h-5 w-5 text-primary" />
@@ -198,7 +198,7 @@ export default function AdminDashboard() {
               </div>
             </Link>
             
-            <Link href="/departments" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/departments" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-orange-500 bg-opacity-10 p-2 rounded-full">
                   <Building2 className="h-5 w-5 text-orange-500" />
@@ -210,7 +210,7 @@ export default function AdminDashboard() {
               </div>
             </Link>
             
-            <Link href="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-primary bg-opacity-10 p-2 rounded-full">
                   <Users className="h-5 w-5 text-primary" />
@@ -222,7 +222,7 @@ export default function AdminDashboard() {
               </div>
             </Link>
             
-            <Link href="/reports" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+            <Link to="/reports" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-green-600 bg-opacity-10 p-2 rounded-full">
                   <FileBarChart2 className="h-5 w-5 text-green-600" />
@@ -256,7 +256,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Departments</h2>
-            <Link href="/departments" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            <Link to="/departments" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
               View All
             </Link>
           </div>
@@ -306,7 +306,7 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Recently Updated Subjects</h2>
-            <Link href="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            <Link to="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
               View All
             </Link>
           </div>

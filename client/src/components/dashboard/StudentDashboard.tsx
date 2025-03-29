@@ -141,10 +141,8 @@ export default function StudentDashboard() {
       <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-800">Recent Assessments</h2>
-          <Link href="/attainments">
-            <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-              View All
-            </a>
+          <Link to="/attainments" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            View All
           </Link>
         </div>
         <div className="overflow-x-auto">
@@ -207,10 +205,8 @@ export default function StudentDashboard() {
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="p-4 border-b flex justify-between items-center">
           <h2 className="text-lg font-medium text-gray-800">Enrolled Subjects</h2>
-          <Link href="/subjects">
-            <a className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-              View All
-            </a>
+          <Link to="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            View All
           </Link>
         </div>
         <div className="overflow-x-auto">
