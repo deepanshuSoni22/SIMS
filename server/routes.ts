@@ -94,6 +94,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
   
+  // Add endpoint for teaching users (Faculty + HOD)
+  app.get(
+    "/api/users/teaching", 
+    isAuthenticated, // Use the isAuthenticated middleware
+    async (req, res) => {
+      try {
+        // Get both faculty and HOD users for subject assignments
+        const facultyUsers = await storage.getUsersByRole(roles.FACULTY) || [];
+        const hodUsers = await storage.getUsersByRole(roles.HOD) || [];
+        
+        // Explicitly cast users to avoid issues with password property
+        const sanitizedFacultyUsers = facultyUsers.map(user => ({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          role: user.role,
+          departmentId: user.departmentId
+        }));
+
+        const sanitizedHodUsers = hodUsers.map(user => ({
+          id: user.id,
+          name: user.name,
+          username: user.username,
+          role: user.role,
+          departmentId: user.departmentId
+        }));
+        
+        // Combine the sanitized users
+        const teachingUsers = [...sanitizedFacultyUsers, ...sanitizedHodUsers];
+        
+        res.json(teachingUsers);
+      } catch (error) {
+        console.error("Error fetching teaching users:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
   app.get(
     "/api/users/role/:role", 
     checkRole([roles.ADMIN, roles.HOD]), 
@@ -539,45 +577,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   );
-  
-  // Add endpoint for teaching users (Faculty + HOD)
-  app.get(
-    "/api/users/teaching", 
-    isAuthenticated, // Use the isAuthenticated middleware
-    async (req, res) => {
-      try {
-        // Get both faculty and HOD users for subject assignments
-        const facultyUsers = await storage.getUsersByRole(roles.FACULTY) || [];
-        const hodUsers = await storage.getUsersByRole(roles.HOD) || [];
-        
-        // Explicitly cast users to avoid issues with password property
-        const sanitizedFacultyUsers = facultyUsers.map(user => ({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          role: user.role,
-          departmentId: user.departmentId
-        }));
-
-        const sanitizedHodUsers = hodUsers.map(user => ({
-          id: user.id,
-          name: user.name,
-          username: user.username,
-          role: user.role,
-          departmentId: user.departmentId
-        }));
-        
-        // Combine the sanitized users
-        const teachingUsers = [...sanitizedFacultyUsers, ...sanitizedHodUsers];
-        
-        res.json(teachingUsers);
-      } catch (error) {
-        console.error("Error fetching teaching users:", error);
-        res.status(500).json({ message: "Internal server error" });
-      }
-    }
-  );
-  
   // Subject Assignment Routes
   app.get(
     "/api/subject-assignments", 
