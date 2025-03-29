@@ -50,9 +50,11 @@ export default function AuthPage() {
   // We'll handle the redirect in an effect to avoid hook execution order issues
   useEffect(() => {
     if (user) {
-      navigate("/dashboard");
+      console.log("User already authenticated, redirecting to dashboard");
+      // Use window.location.href for consistent redirect behavior
+      window.location.href = "/dashboard";
     }
-  }, [user, navigate]);
+  }, [user]);
 
   // Login form
   const loginForm = useForm<LoginFormValues>({
@@ -66,8 +68,9 @@ export default function AuthPage() {
   const handleLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data, {
       onSuccess: async () => {
-        // Navigate to dashboard on successful login
-        navigate('/dashboard');
+        console.log("Login successful, redirecting to dashboard");
+        // Explicitly redirect to dashboard and force page refresh to ensure proper state loading
+        window.location.href = '/dashboard';
       }
     });
   };
@@ -95,8 +98,9 @@ export default function AuthPage() {
     
     registerMutation.mutate(data, {
       onSuccess: () => {
-        // Navigate to dashboard on successful registration
-        navigate('/dashboard');
+        console.log("Registration successful, redirecting to dashboard");
+        // Explicitly redirect to dashboard and force page refresh to ensure proper state loading
+        window.location.href = '/dashboard';
       }
     });
   };
