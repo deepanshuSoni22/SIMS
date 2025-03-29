@@ -289,6 +289,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
       try {
         const departmentData = insertDepartmentSchema.parse(req.body);
         const department = await storage.createDepartment(departmentData);
+        
+        // If HOD ID is being set when creating the department
+        if (departmentData.hodId) {
+          // Check if hodId is null, if so skip the update
+          if (departmentData.hodId !== null) {
+            // Update the HOD's departmentId to match the current department
+            const hodUser = await storage.getUser(departmentData.hodId);
+            
+            if (hodUser) {
+              await storage.updateUser(departmentData.hodId, { 
+                departmentId: department.id 
+              });
+            }
+          }
+        }
+        
         res.status(201).json(department);
       } catch (error) {
         if (error instanceof z.ZodError) {
@@ -316,6 +332,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!updatedDepartment) {
           return res.status(404).json({ message: "Department not found" });
+        }
+        
+        // If HOD ID is being updated, update HOD's departmentId as well
+        if (req.body.hodId) {
+          // Check if hodId is null, if so skip the update
+          if (req.body.hodId !== null) {
+            // Get the current user to ensure they exist and aren't already assigned to this department
+            const hodUser = await storage.getUser(req.body.hodId);
+            
+            if (hodUser) {
+              // Update the HOD's departmentId to match the current department
+              await storage.updateUser(req.body.hodId, { 
+                departmentId: departmentId 
+              });
+            }
+          }
         }
         
         res.json(updatedDepartment);
@@ -521,6 +553,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     logActivity("created", "subject assignment"),
     async (req, res) => {
       try {
+        // Check if user is authenticated
+        if (!req.user || !req.user.id) {
+          return res.status(401).json({ message: "User not authenticated" });
+        }
+        
         const assignmentData = insertSubjectAssignmentSchema.parse({
           ...req.body,
           assignedBy: req.user.id
@@ -754,6 +791,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     logActivity("created", "course plan"),
     async (req, res) => {
       try {
+        // Check if user is authenticated
+        if (!req.user || !req.user.id) {
+          return res.status(401).json({ message: "User not authenticated" });
+        }
+        
         const planData = insertCoursePlanSchema.parse({
           ...req.body,
           facultyId: req.user.id
@@ -778,6 +820,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const planId = parseInt(req.params.id);
       
       try {
+        // Check if user is authenticated
+        if (!req.user || !req.user.id) {
+          return res.status(401).json({ message: "User not authenticated" });
+        }
+        
         const existingPlan = await storage.getCoursePlan(planId);
         
         if (!existingPlan) {
@@ -843,9 +890,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       const studentId = parseInt(req.params.studentId);
       
-      // Students can only view their own marks
-      if (req.user.role === roles.STUDENT && req.user.id !== studentId) {
-        return res.status(403).json({ message: "You can only view your own marks" });
+      // Check if user is authenticated
+      if (req.user) {
+        // Students can only view their own marks
+        if (req.user.role === roles.STUDENT && req.user.id !== studentId) {
+          return res.status(403).json({ message: "You can only view your own marks" });
+        }
       }
       
       const marks = await storage.getStudentAssessmentMarksByStudent(studentId);
@@ -946,9 +996,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
     async (req, res) => {
       const studentId = parseInt(req.params.studentId);
       
-      // Students can only view their own responses
-      if (req.user.role === roles.STUDENT && req.user.id !== studentId) {
-        return res.status(403).json({ message: "You can only view your own responses" });
+      // Check if user is authenticated
+      if (req.user) {
+        // Students can only view their own responses
+        if (req.user.role === roles.STUDENT && req.user.id !== studentId) {
+          return res.status(403).json({ message: "You can only view your own responses" });
+        }
       }
       
       const responses = await storage.getStudentResponsesByStudent(studentId);
@@ -962,6 +1015,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     logActivity("created", "student response"),
     async (req, res) => {
       try {
+        // Check if user is authenticated
+        if (!req.user || !req.user.id) {
+          return res.status(401).json({ message: "User not authenticated" });
+        }
+        
         const responseData = insertStudentResponseSchema.parse({
           ...req.body,
           studentId: req.user.id
