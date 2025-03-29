@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Bell, HelpCircle, Menu } from "lucide-react";
+import { Bell, HelpCircle, Menu, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import soundaryaLogo from "../../assets/soundarya_logo.png";
+import { Link } from "wouter";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -22,7 +23,12 @@ export default function Header({ toggleSidebar, title }: HeaderProps) {
   const { user, logoutMutation } = useAuth();
 
   const handleLogout = () => {
-    logoutMutation.mutate();
+    logoutMutation.mutate(undefined, {
+      onSuccess: () => {
+        // Manually navigate to auth page after successful logout
+        window.location.href = "/auth";
+      }
+    });
   };
 
   const getInitials = (name: string) => {
@@ -83,7 +89,16 @@ export default function Header({ toggleSidebar, title }: HeaderProps) {
                   {user?.role.toUpperCase()}
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleLogout}>Logout</DropdownMenuItem>
+                <Link to="/profile">
+                  <DropdownMenuItem>
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                </Link>
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="h-4 w-4 mr-2" />
+                  Logout
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
