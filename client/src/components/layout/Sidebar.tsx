@@ -146,7 +146,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                       className={cn(
                         "flex items-center px-3 py-2.5 text-sm font-medium rounded-md cursor-pointer",
                         isActive 
-                          ? "bg-primary bg-opacity-20 text-primary" 
+                          ? "bg-primary bg-opacity-10 text-primary" 
                           : "text-gray-700 hover:bg-gray-100"
                       )}
                     >
