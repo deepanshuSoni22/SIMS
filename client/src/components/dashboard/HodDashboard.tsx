@@ -138,8 +138,8 @@ export default function HodDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Faculty Members</h2>
-            <Link to={`/users?role=faculty&departmentId=${user?.departmentId}`} className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-              View All
+            <Link to="/faculty-management" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+              Manage Faculty
             </Link>
           </div>
           <div className="overflow-x-auto">
@@ -274,18 +274,31 @@ export default function HodDashboard() {
           <div className="p-4 border-b">
             <h2 className="text-lg font-medium text-gray-800">Quick Actions</h2>
           </div>
-          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <Link to={subjects && subjects.length > 0 
-                  ? `/subjects?action=assign&subjectId=${subjects[0].id}&departmentId=${user?.departmentId}` 
-                  : `/subjects?departmentId=${user?.departmentId}`} 
+          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
+            <Link to="/faculty-management" 
               className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-primary bg-opacity-10 p-2 rounded-full">
                   <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div className="ml-3">
+                  <h3 className="text-sm font-medium text-gray-800">Manage Faculty</h3>
+                  <p className="text-xs text-gray-500">Manage faculty members in your department</p>
+                </div>
+              </div>
+            </Link>
+            
+            <Link to={subjects && subjects.length > 0 
+                  ? `/subjects?action=assign&subjectId=${subjects[0].id}&departmentId=${user?.departmentId}` 
+                  : `/subjects?departmentId=${user?.departmentId}`} 
+              className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
+              <div className="flex items-center">
+                <div className="bg-blue-600 bg-opacity-10 p-2 rounded-full">
+                  <BookOpen className="h-5 w-5 text-blue-600" />
+                </div>
+                <div className="ml-3">
                   <h3 className="text-sm font-medium text-gray-800">Assign Subjects</h3>
-                  <p className="text-xs text-gray-500">Assign subjects to faculty members in your department</p>
+                  <p className="text-xs text-gray-500">Assign subjects to faculty members</p>
                 </div>
               </div>
             </Link>

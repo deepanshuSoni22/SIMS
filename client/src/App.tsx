@@ -10,6 +10,7 @@ import SubjectPage from "@/pages/subject-page";
 import CoursePlanPage from "@/pages/course-plan-page";
 import AttainmentPage from "@/pages/attainment-page";
 import ReportPage from "@/pages/report-page";
+import FacultyManagementPage from "@/pages/faculty-management-page";
 import { roles } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -54,6 +55,11 @@ function Router() {
         path="/reports" 
         component={() => <ReportPage />} 
         allowedRoles={[roles.ADMIN, roles.HOD, roles.FACULTY]}
+      />
+      <ProtectedRoute 
+        path="/faculty-management" 
+        component={() => <FacultyManagementPage />} 
+        allowedRoles={[roles.HOD]}
       />
       <Route component={NotFound} />
     </Switch>

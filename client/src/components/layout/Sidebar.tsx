@@ -50,6 +50,12 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
       allowedRoles: [roles.ADMIN, roles.HOD] 
     },
     { 
+      title: "Faculty Management", 
+      icon: "groups", 
+      path: "/faculty-management", 
+      allowedRoles: [roles.HOD] 
+    },
+    { 
       title: "Subjects", 
       icon: "book", 
       path: "/subjects", 
