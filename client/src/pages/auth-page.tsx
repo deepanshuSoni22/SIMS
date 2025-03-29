@@ -119,7 +119,7 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className={`grid w-full ${hasUsers ? 'grid-cols-1' : 'grid-cols-2'} mb-4`}>
+              <TabsList className={`grid w-full ${hasUsers ? 'hidden' : 'grid-cols-2'} mb-4`}>
                 <TabsTrigger value="login">Login</TabsTrigger>
                 {(!hasUsers || isSystemLoading) && (
                   <TabsTrigger value="register">Register</TabsTrigger>
