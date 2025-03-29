@@ -96,8 +96,9 @@ export default function DepartmentPage() {
         title: "Department created successfully",
         description: "The department has been added to the system.",
       });
-      // Invalidate departments query to refresh the list
+      // Invalidate departments and users queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsAddDepartmentDialogOpen(false);
       form.reset();
     },
@@ -121,8 +122,9 @@ export default function DepartmentPage() {
         title: "Department updated successfully",
         description: "The department has been updated in the system.",
       });
-      // Invalidate departments query to refresh the list
+      // Invalidate departments and users queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsEditDepartmentDialogOpen(false);
       setSelectedDepartment(null);
       editForm.reset();
@@ -146,8 +148,9 @@ export default function DepartmentPage() {
         title: "Department deleted successfully",
         description: "The department has been removed from the system.",
       });
-      // Invalidate departments query to refresh the list
+      // Invalidate departments and users queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
       setIsDeleteDialogOpen(false);
       setSelectedDepartment(null);
     },
