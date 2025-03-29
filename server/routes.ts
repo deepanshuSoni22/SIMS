@@ -1401,11 +1401,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const thresholdSetting = await storage.getSystemSetting('attainment_threshold');
         const attainmentThreshold = thresholdSetting ? parseInt(thresholdSetting.value) : 60;
         
+        // Get attainment type setting (SEP or NEP)
+        const attainmentTypeSetting = await storage.getSystemSetting('attainment_type');
+        const attainmentType = attainmentTypeSetting ? attainmentTypeSetting.value : 'SEP';
+        
         res.status(200).json({
           academicYear,
           directAttainmentWeight,
           indirectAttainmentWeight,
-          attainmentThreshold
+          attainmentThreshold,
+          attainmentType
         });
       } catch (error) {
         console.error("Error getting general settings:", error);
@@ -1421,7 +1426,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     logActivity("updated", "system-setting"),
     async (req, res) => {
       try {
-        const { academicYear, directAttainmentWeight, indirectAttainmentWeight, attainmentThreshold } = req.body;
+        const { academicYear, directAttainmentWeight, indirectAttainmentWeight, attainmentThreshold, attainmentType } = req.body;
         
         if (!academicYear || typeof academicYear !== 'string') {
           return res.status(400).json({ message: "Academic year is required and must be a string" });
@@ -1434,6 +1439,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ) {
           return res.status(400).json({ 
             message: "Direct attainment weight, indirect attainment weight, and attainment threshold are required and must be numbers" 
+          });
+        }
+        
+        if (!attainmentType || typeof attainmentType !== 'string' || (attainmentType !== 'SEP' && attainmentType !== 'NEP')) {
+          return res.status(400).json({ 
+            message: "Attainment type is required and must be either 'SEP' or 'NEP'" 
           });
         }
         
@@ -1493,6 +1504,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           });
         }
         
+        // Update attainment type setting (SEP or NEP)
+        let attainmentTypeSetting = await storage.getSystemSetting('attainment_type');
+        if (attainmentTypeSetting) {
+          await storage.updateSystemSetting(attainmentTypeSetting.id, { value: attainmentType });
+        } else {
+          await storage.createSystemSetting({
+            key: 'attainment_type',
+            value: attainmentType,
+            description: 'Type of attainment calculation method (SEP or NEP)',
+            updatedBy: req.user.id
+          });
+        }
+        
         res.status(200).json({
           success: true,
           message: "General settings updated successfully",
@@ -1500,7 +1524,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             academicYear,
             directAttainmentWeight,
             indirectAttainmentWeight,
-            attainmentThreshold
+            attainmentThreshold,
+            attainmentType
           }
         });
       } catch (error) {

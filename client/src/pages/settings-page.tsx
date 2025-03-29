@@ -30,7 +30,8 @@ export default function SettingsPage() {
     academicYear: '2024-2025',
     directAttainmentWeight: 80,
     indirectAttainmentWeight: 20,
-    attainmentThreshold: 60
+    attainmentThreshold: 60,
+    attainmentType: 'SEP' // Default to SEP
   });
   
   // Use college title hook
@@ -95,7 +96,8 @@ export default function SettingsPage() {
         academicYear: generalSettings.academicYear || '2024-2025',
         directAttainmentWeight: generalSettings.directAttainmentWeight || 80,
         indirectAttainmentWeight: generalSettings.indirectAttainmentWeight || 20,
-        attainmentThreshold: generalSettings.attainmentThreshold || 60
+        attainmentThreshold: generalSettings.attainmentThreshold || 60,
+        attainmentType: generalSettings.attainmentType || 'SEP'
       });
     }
   }, [generalSettings]);
@@ -180,8 +182,39 @@ export default function SettingsPage() {
     }));
   };
   
+  // Function to set SEP/NEP attainment types with preset values
+  const handleSetAttainmentType = (type: 'SEP' | 'NEP') => {
+    if (type === 'SEP') {
+      setGeneralForm(prev => ({
+        ...prev,
+        attainmentType: 'SEP',
+        directAttainmentWeight: 80,
+        indirectAttainmentWeight: 20,
+        attainmentThreshold: 60
+      }));
+      toast({
+        title: "SEP Attainment Settings Selected",
+        description: "SEP attainment weights and threshold have been set. Click Save to apply changes.",
+        variant: "default",
+      });
+    } else {
+      setGeneralForm(prev => ({
+        ...prev,
+        attainmentType: 'NEP',
+        directAttainmentWeight: 70,
+        indirectAttainmentWeight: 30,
+        attainmentThreshold: 50
+      }));
+      toast({
+        title: "NEP Attainment Settings Selected",
+        description: "NEP attainment weights and threshold have been set. Click Save to apply changes.",
+        variant: "default",
+      });
+    }
+  };
+  
   const handleUpdateGeneralSettings = () => {
-    const { academicYear, directAttainmentWeight, indirectAttainmentWeight, attainmentThreshold } = generalForm;
+    const { academicYear, directAttainmentWeight, indirectAttainmentWeight, attainmentThreshold, attainmentType } = generalForm;
     
     if (!academicYear) {
       toast({
@@ -197,6 +230,15 @@ export default function SettingsPage() {
       toast({
         title: "Weights must sum to 100%",
         description: "The direct and indirect assessment weights must add up to 100%.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (!attainmentType || (attainmentType !== 'SEP' && attainmentType !== 'NEP')) {
+      toast({
+        title: "Invalid attainment type",
+        description: "Please select either SEP or NEP attainment type.",
         variant: "destructive",
       });
       return;
@@ -366,6 +408,35 @@ export default function SettingsPage() {
                     <h3 className="text-lg font-medium">COPO Attainment Settings</h3>
                     <p className="text-sm text-muted-foreground">
                       Configure how course outcomes and program outcomes are calculated.
+                    </p>
+                  </div>
+                  
+                  <div className="flex space-x-4 mb-4">
+                    <div className="flex-1">
+                      <Button 
+                        variant={generalForm.attainmentType === 'SEP' ? "default" : "outline"} 
+                        onClick={() => handleSetAttainmentType('SEP')}
+                        className="w-full"
+                      >
+                        SEP Attainment Settings
+                      </Button>
+                    </div>
+                    <div className="flex-1">
+                      <Button 
+                        variant={generalForm.attainmentType === 'NEP' ? "default" : "outline"} 
+                        onClick={() => handleSetAttainmentType('NEP')}
+                        className="w-full"
+                      >
+                        NEP Attainment Settings
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="p-3 bg-muted rounded-md">
+                    <p className="text-sm font-medium mb-1">Current Attainment Type: {generalForm.attainmentType}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Choose between SEP (Semester End Pattern) or NEP (National Education Policy) attainment settings.
+                      SEP uses 80/20 weights, while NEP uses 70/30 weights for direct/indirect assessments.
                     </p>
                   </div>
                   
