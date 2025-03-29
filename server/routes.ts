@@ -65,6 +65,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Set up authentication
   setupAuth(app);
   
+  // Check if any users exist - used for first-time setup
+  app.get("/api/system/has-users", async (req, res) => {
+    const count = await storage.getUsersCount();
+    res.json({ hasUsers: count > 0 });
+  });
+  
   // User Management Routes
   app.get(
     "/api/users", 

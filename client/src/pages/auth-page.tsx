@@ -4,13 +4,15 @@ import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { School } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { School, AlertCircle } from "lucide-react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import soundaryaLogo from "../assets/soundarya_logo.png";
 
 const loginSchema = z.object({
@@ -25,6 +27,24 @@ export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { loginMutation, registerMutation, user } = useAuth();
   const [location, navigate] = useLocation();
+  
+  // Check if there are any users in the system
+  const { 
+    data: systemData, 
+    isLoading: isSystemLoading 
+  } = useQuery<{ hasUsers: boolean }>({
+    queryKey: ["/api/system/has-users"],
+    staleTime: 60000, // 1 minute
+  });
+  
+  const hasUsers = systemData?.hasUsers || false;
+  
+  // Set default tab to register if no users exist (first-time setup)
+  useEffect(() => {
+    if (!isSystemLoading && !hasUsers) {
+      setActiveTab("register");
+    }
+  }, [isSystemLoading, hasUsers]);
 
   // We'll handle the redirect in an effect to avoid hook execution order issues
   useEffect(() => {
@@ -65,6 +85,11 @@ export default function AuthPage() {
   });
 
   const handleRegisterSubmit = (data: RegisterFormValues) => {
+    // For the first user, force admin role
+    if (!hasUsers) {
+      data.role = roles.ADMIN;
+    }
+    
     registerMutation.mutate(data, {
       onSuccess: () => {
         // Navigate to dashboard on successful registration
@@ -93,10 +118,22 @@ export default function AuthPage() {
           </CardHeader>
           <CardContent>
             <Tabs defaultValue="login" value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="grid w-full grid-cols-2 mb-4">
+              <TabsList className={`grid w-full ${hasUsers ? 'grid-cols-1' : 'grid-cols-2'} mb-4`}>
                 <TabsTrigger value="login">Login</TabsTrigger>
-                <TabsTrigger value="register">Register</TabsTrigger>
+                {(!hasUsers || isSystemLoading) && (
+                  <TabsTrigger value="register">Register</TabsTrigger>
+                )}
               </TabsList>
+              
+              {hasUsers && activeTab === "register" && (
+                <Alert className="mb-4 bg-amber-50 border-amber-200">
+                  <AlertCircle className="h-4 w-4 text-amber-600" />
+                  <AlertTitle className="text-amber-800">Registration Restricted</AlertTitle>
+                  <AlertDescription className="text-amber-700">
+                    Only administrators can create new accounts. Please contact your institution administrator for access.
+                  </AlertDescription>
+                </Alert>
+              )}
 
               <TabsContent value="login">
                 <Form {...loginForm}>
@@ -193,32 +230,40 @@ export default function AuthPage() {
                         </FormItem>
                       )}
                     />
-                    <FormField
-                      control={registerForm.control}
-                      name="role"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Role</FormLabel>
-                          <Select onValueChange={field.onChange} defaultValue={field.value}>
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select your role" />
-                              </SelectTrigger>
-                            </FormControl>
-                            <SelectContent>
-                              <SelectItem value={roles.STUDENT}>Student</SelectItem>
-                              <SelectItem value={roles.FACULTY}>Faculty</SelectItem>
-                              <SelectItem value={roles.HOD}>Head of Department</SelectItem>
-                              <SelectItem value={roles.ADMIN}>Administrator</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <FormDescription>
-                            Select your role in the institution
-                          </FormDescription>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
+                    {/* If no users exist, force admin role, otherwise show selection */}
+                    {!hasUsers ? (
+                      <div className="mb-4 bg-blue-50 p-3 rounded-md border border-blue-200">
+                        <h4 className="text-blue-800 font-medium mb-1">Administrator Account</h4>
+                        <p className="text-blue-700 text-sm">The first user is automatically registered as an administrator.</p>
+                      </div>
+                    ) : (
+                      <FormField
+                        control={registerForm.control}
+                        name="role"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Role</FormLabel>
+                            <Select onValueChange={field.onChange} defaultValue={field.value}>
+                              <FormControl>
+                                <SelectTrigger>
+                                  <SelectValue placeholder="Select your role" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                <SelectItem value={roles.STUDENT}>Student</SelectItem>
+                                <SelectItem value={roles.FACULTY}>Faculty</SelectItem>
+                                <SelectItem value={roles.HOD}>Head of Department</SelectItem>
+                                <SelectItem value={roles.ADMIN}>Administrator</SelectItem>
+                              </SelectContent>
+                            </Select>
+                            <FormDescription>
+                              Select your role in the institution
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+                    )}
                     <Button 
                       type="submit" 
                       className="w-full" 
@@ -232,13 +277,20 @@ export default function AuthPage() {
             </Tabs>
           </CardContent>
           <CardFooter className="flex flex-col">
-            <p className="text-center text-sm text-gray-500 mt-2">
-              {activeTab === "login" ? (
-                <span>Don't have an account? <button onClick={() => setActiveTab("register")} className="text-primary hover:underline">Register</button></span>
-              ) : (
-                <span>Already have an account? <button onClick={() => setActiveTab("login")} className="text-primary hover:underline">Login</button></span>
-              )}
-            </p>
+            {(!hasUsers || isSystemLoading || activeTab === "register") && (
+              <p className="text-center text-sm text-gray-500 mt-2">
+                {activeTab === "login" && !hasUsers ? (
+                  <span>Don't have an account? <button onClick={() => setActiveTab("register")} className="text-primary hover:underline">Register</button></span>
+                ) : (
+                  <span>Already have an account? <button onClick={() => setActiveTab("login")} className="text-primary hover:underline">Login</button></span>
+                )}
+              </p>
+            )}
+            {!isSystemLoading && !hasUsers && activeTab === "register" && (
+              <p className="text-center text-amber-600 mt-4 text-sm">
+                <span className="font-medium">First-time setup:</span> Creating the first user will make them an administrator.
+              </p>
+            )}
           </CardFooter>
         </Card>
       </div>
