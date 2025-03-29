@@ -78,6 +78,18 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
       icon: "bar_chart", 
       path: "/reports", 
       allowedRoles: [roles.ADMIN, roles.HOD, roles.FACULTY] 
+    },
+    { 
+      title: "Activity Logs", 
+      icon: "history", 
+      path: "/activity-logs", 
+      allowedRoles: [roles.ADMIN] 
+    },
+    { 
+      title: "Settings", 
+      icon: "settings", 
+      path: "/settings", 
+      allowedRoles: [roles.ADMIN] 
     }
   ];
 

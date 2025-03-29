@@ -13,6 +13,7 @@ import ReportPage from "@/pages/report-page";
 import FacultyManagementPage from "@/pages/faculty-management-page";
 import ProfilePage from "@/pages/profile-page";
 import ActivityLogsPage from "@/pages/activity-logs-page";
+import SettingsPage from "@/pages/settings-page";
 import { roles } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -71,6 +72,11 @@ function Router() {
       <ProtectedRoute 
         path="/activity-logs" 
         component={() => <ActivityLogsPage />} 
+        allowedRoles={[roles.ADMIN]}
+      />
+      <ProtectedRoute 
+        path="/settings" 
+        component={() => <SettingsPage />} 
         allowedRoles={[roles.ADMIN]}
       />
       <Route component={NotFound} />

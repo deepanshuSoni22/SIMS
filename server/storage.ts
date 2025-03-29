@@ -13,7 +13,8 @@ import {
   studentResponses, type StudentResponse, type InsertStudentResponse,
   attainments, type Attainment, type InsertAttainment,
   activityLogs, type ActivityLog, type InsertActivityLog,
-  notifications, type Notification, type InsertNotification
+  notifications, type Notification, type InsertNotification,
+  systemSettings, type SystemSetting, type InsertSystemSetting
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -143,6 +144,14 @@ export interface IStorage {
   getUnreadNotificationsCount(userId: number): Promise<number>;
   markAllNotificationsAsRead(userId: number): Promise<boolean>;
   
+  // System Settings Management
+  getSystemSetting(key: string): Promise<SystemSetting | undefined>;
+  getAllSystemSettings(): Promise<SystemSetting[]>;
+  createSystemSetting(setting: InsertSystemSetting): Promise<SystemSetting>;
+  updateSystemSetting(id: number, setting: Partial<InsertSystemSetting>): Promise<SystemSetting | undefined>;
+  getLogoUrl(): Promise<string | undefined>;
+  updateLogoUrl(url: string, userId: number): Promise<SystemSetting | undefined>;
+
   // Session Store
   sessionStore: session.SessionStore;
 }
@@ -163,6 +172,7 @@ export class MemStorage implements IStorage {
   private attainments: Map<number, Attainment>;
   private activityLogs: Map<number, ActivityLog>;
   private notifications: Map<number, Notification>;
+  private systemSettings: Map<number, SystemSetting>;
   
   private userIdCounter: number;
   private departmentIdCounter: number;
@@ -179,6 +189,7 @@ export class MemStorage implements IStorage {
   private attainmentIdCounter: number;
   private activityLogIdCounter: number;
   private notificationIdCounter: number;
+  private systemSettingIdCounter: number;
   
   sessionStore: session.SessionStore;
 
@@ -198,6 +209,7 @@ export class MemStorage implements IStorage {
     this.attainments = new Map();
     this.activityLogs = new Map();
     this.notifications = new Map();
+    this.systemSettings = new Map();
     
     this.userIdCounter = 1;
     this.departmentIdCounter = 1;
@@ -214,6 +226,7 @@ export class MemStorage implements IStorage {
     this.attainmentIdCounter = 1;
     this.activityLogIdCounter = 1;
     this.notificationIdCounter = 1;
+    this.systemSettingIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -743,6 +756,63 @@ export class MemStorage implements IStorage {
         updated = true;
       });
     return updated;
+  }
+  
+  // System Settings Management
+  async getSystemSetting(key: string): Promise<SystemSetting | undefined> {
+    return Array.from(this.systemSettings.values()).find(
+      setting => setting.key === key
+    );
+  }
+  
+  async getAllSystemSettings(): Promise<SystemSetting[]> {
+    return Array.from(this.systemSettings.values());
+  }
+  
+  async createSystemSetting(insertSetting: InsertSystemSetting): Promise<SystemSetting> {
+    const id = this.systemSettingIdCounter++;
+    const now = new Date();
+    const setting: SystemSetting = {
+      ...insertSetting,
+      id,
+      lastUpdated: now
+    };
+    this.systemSettings.set(id, setting);
+    return setting;
+  }
+  
+  async updateSystemSetting(id: number, updatedSetting: Partial<InsertSystemSetting>): Promise<SystemSetting | undefined> {
+    const setting = this.systemSettings.get(id);
+    if (!setting) return undefined;
+    
+    const now = new Date();
+    const updatedSettingData: SystemSetting = {
+      ...setting,
+      ...updatedSetting,
+      lastUpdated: now
+    };
+    this.systemSettings.set(id, updatedSettingData);
+    return updatedSettingData;
+  }
+  
+  async getLogoUrl(): Promise<string | undefined> {
+    const logoSetting = await this.getSystemSetting('logo_url');
+    return logoSetting?.value as string | undefined;
+  }
+  
+  async updateLogoUrl(url: string, userId: number): Promise<SystemSetting | undefined> {
+    let logoSetting = await this.getSystemSetting('logo_url');
+    
+    if (logoSetting) {
+      return this.updateSystemSetting(logoSetting.id, { value: url });
+    } else {
+      return this.createSystemSetting({
+        key: 'logo_url',
+        value: url,
+        description: 'College logo URL',
+        updatedBy: userId
+      });
+    }
   }
 }
 
@@ -1281,6 +1351,53 @@ export class DatabaseStorage implements IStorage {
         eq(notifications.isRead, false)
       ));
     return (result.rowCount ?? 0) > 0;
+  }
+  
+  // System Settings Management
+  async getSystemSetting(key: string): Promise<SystemSetting | undefined> {
+    const [setting] = await db.select()
+      .from(systemSettings)
+      .where(eq(systemSettings.key, key));
+    return setting || undefined;
+  }
+  
+  async getAllSystemSettings(): Promise<SystemSetting[]> {
+    return await db.select().from(systemSettings);
+  }
+  
+  async createSystemSetting(insertSetting: InsertSystemSetting): Promise<SystemSetting> {
+    const [setting] = await db.insert(systemSettings)
+      .values(insertSetting)
+      .returning();
+    return setting;
+  }
+  
+  async updateSystemSetting(id: number, updatedSetting: Partial<InsertSystemSetting>): Promise<SystemSetting | undefined> {
+    const [setting] = await db.update(systemSettings)
+      .set(updatedSetting)
+      .where(eq(systemSettings.id, id))
+      .returning();
+    return setting || undefined;
+  }
+  
+  async getLogoUrl(): Promise<string | undefined> {
+    const logoSetting = await this.getSystemSetting('logo_url');
+    return logoSetting?.value as string | undefined;
+  }
+  
+  async updateLogoUrl(url: string, userId: number): Promise<SystemSetting | undefined> {
+    let logoSetting = await this.getSystemSetting('logo_url');
+    
+    if (logoSetting) {
+      return this.updateSystemSetting(logoSetting.id, { value: url });
+    } else {
+      return this.createSystemSetting({
+        key: 'logo_url',
+        value: url,
+        description: 'College logo URL',
+        updatedBy: userId
+      });
+    }
   }
 }
 

@@ -17,6 +17,7 @@ import {
   insertStudentResponseSchema,
   insertAttainmentSchema,
   insertNotificationSchema,
+  insertSystemSettingSchema,
   roles
 } from "@shared/schema";
 import { z } from "zod";
@@ -1228,6 +1229,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Invalid notification data", errors: error.errors });
         }
         throw error;
+      }
+    }
+  );
+  
+  // System Settings Routes
+  app.get(
+    "/api/settings",
+    async (req, res) => {
+      const settings = await storage.getAllSystemSettings();
+      res.json(settings);
+    }
+  );
+  
+  app.get(
+    "/api/settings/logo",
+    async (req, res) => {
+      const logoUrl = await storage.getLogoUrl();
+      res.json({ logoUrl: logoUrl || null });
+    }
+  );
+  
+  app.post(
+    "/api/settings/logo",
+    checkRole([roles.ADMIN]),
+    logActivity("updated", "system-setting"),
+    async (req, res) => {
+      try {
+        const { url } = req.body;
+        
+        if (!url || typeof url !== 'string') {
+          return res.status(400).json({ message: "URL is required" });
+        }
+        
+        if (!req.user) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        const setting = await storage.updateLogoUrl(url, req.user.id);
+        res.status(200).json(setting);
+      } catch (error) {
+        console.error("Error updating logo URL:", error);
+        res.status(500).json({ message: "Failed to update logo URL" });
+      }
+    }
+  );
+  
+  app.post(
+    "/api/settings",
+    checkRole([roles.ADMIN]),
+    logActivity("created", "system-setting"),
+    async (req, res) => {
+      try {
+        const settingData = insertSystemSettingSchema.parse(req.body);
+        const setting = await storage.createSystemSetting(settingData);
+        res.status(201).json(setting);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid setting data", errors: error.errors });
+        }
+        console.error("Error creating system setting:", error);
+        res.status(500).json({ message: "Failed to create system setting" });
+      }
+    }
+  );
+  
+  app.patch(
+    "/api/settings/:id",
+    checkRole([roles.ADMIN]),
+    logActivity("updated", "system-setting"),
+    async (req, res) => {
+      const settingId = parseInt(req.params.id);
+      
+      if (isNaN(settingId)) {
+        return res.status(400).json({ message: "Invalid setting ID format" });
+      }
+      
+      try {
+        const updatedSetting = await storage.updateSystemSetting(settingId, req.body);
+        
+        if (!updatedSetting) {
+          return res.status(404).json({ message: "Setting not found" });
+        }
+        
+        res.json(updatedSetting);
+      } catch (error) {
+        console.error("Error updating system setting:", error);
+        res.status(500).json({ message: "Failed to update system setting" });
       }
     }
   );
