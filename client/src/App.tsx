@@ -12,6 +12,7 @@ import AttainmentPage from "@/pages/attainment-page";
 import ReportPage from "@/pages/report-page";
 import FacultyManagementPage from "@/pages/faculty-management-page";
 import ProfilePage from "@/pages/profile-page";
+import ActivityLogsPage from "@/pages/activity-logs-page";
 import { roles } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -66,6 +67,11 @@ function Router() {
         path="/profile" 
         component={() => <ProfilePage />} 
         // All authenticated users can access their profile
+      />
+      <ProtectedRoute 
+        path="/activity-logs" 
+        component={() => <ActivityLogsPage />} 
+        allowedRoles={[roles.ADMIN]}
       />
       <Route component={NotFound} />
     </Switch>

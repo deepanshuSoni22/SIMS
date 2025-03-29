@@ -180,9 +180,9 @@ export default function AdminDashboard() {
             </table>
           </div>
           <div className="bg-gray-50 px-4 py-3 border-t border-gray-200 text-center">
-            <button className="text-primary hover:text-blue-700 text-sm font-medium focus:outline-none">
+            <Link to="/activity-logs" className="text-primary hover:text-blue-700 text-sm font-medium focus:outline-none inline-block">
               View All Activities
-            </button>
+            </Link>
           </div>
         </div>
         
