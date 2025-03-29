@@ -147,8 +147,6 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                         "flex items-center px-3 py-2.5 text-sm font-medium rounded-md cursor-pointer",
                         isActive 
                           ? "bg-primary bg-opacity-20 text-primary" 
-                          : item.title === "Dashboard" 
-                          ? "text-primary-foreground bg-primary hover:bg-primary/90"
                           : "text-gray-700 hover:bg-gray-100"
                       )}
                     >
@@ -156,15 +154,15 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                         "material-icons mr-3",
                         isActive 
                           ? "text-primary" 
-                          : item.title === "Dashboard" 
-                          ? "text-white" 
+                          : item.title === "Dashboard"
+                          ? "text-primary"
                           : "text-gray-600"
                       )}>
                         {item.icon}
                       </span>
                       <span className={cn(
                         "font-medium",
-                        item.title === "Dashboard" && !isActive && "text-white"
+                        item.title === "Dashboard" && !isActive && "text-gray-700"
                       )}>
                         {item.title}
                       </span>
