@@ -41,7 +41,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
       title: "User Management", 
       icon: "people", 
       path: "/users", 
-      allowedRoles: [roles.ADMIN, roles.HOD] 
+      allowedRoles: [roles.ADMIN] 
     },
     { 
       title: "Departments", 
