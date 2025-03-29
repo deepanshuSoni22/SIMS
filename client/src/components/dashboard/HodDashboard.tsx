@@ -285,7 +285,7 @@ export default function HodDashboard() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-gray-800">Assign Subjects</h3>
-                  <p className="text-xs text-gray-500">Create and assign subjects to faculty</p>
+                  <p className="text-xs text-gray-500">View, add, and assign subjects to faculty</p>
                 </div>
               </div>
             </Link>

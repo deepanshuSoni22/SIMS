@@ -392,7 +392,7 @@ export default function SubjectPage() {
                                 <span>{assignedFaculty?.name || 'Unknown Faculty'}</span>
                               </div>
                               {/* Show a count if multiple faculty are assigned */}
-                              {subjectAssignments?.filter(a => a.subjectId === subject.id).length > 1 && (
+                              {(subjectAssignments?.filter(a => a.subjectId === subject.id)?.length || 0) > 1 && (
                                 <Button 
                                   variant="link" 
                                   className="text-xs text-blue-500 ml-6 p-0 h-auto"
@@ -401,7 +401,7 @@ export default function SubjectPage() {
                                     handleViewFacultyClick(subject);
                                   }}
                                 >
-                                  +{subjectAssignments.filter(a => a.subjectId === subject.id).length - 1} more
+                                  +{(subjectAssignments?.filter(a => a.subjectId === subject.id)?.length || 1) - 1} more
                                 </Button>
                               )}
                             </div>
@@ -421,7 +421,7 @@ export default function SubjectPage() {
                                 >
                                   <UserPlus className="h-4 w-4" />
                                 </Button>
-                                {subjectAssignments?.filter(a => a.subjectId === subject.id).length > 0 && (
+                                {(subjectAssignments?.filter(a => a.subjectId === subject.id)?.length || 0) > 0 && (
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
@@ -766,7 +766,7 @@ export default function SubjectPage() {
           <div className="mt-4">
             {selectedSubject && (
               <div className="space-y-4">
-                {subjectAssignments?.filter(a => a.subjectId === selectedSubject.id).length > 0 ? (
+                {(subjectAssignments?.filter(a => a.subjectId === selectedSubject.id)?.length || 0) > 0 ? (
                   <div className="space-y-2">
                     {subjectAssignments
                       ?.filter(a => a.subjectId === selectedSubject.id)
