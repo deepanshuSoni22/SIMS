@@ -464,30 +464,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
     requireAuth, // Add authentication middleware
     async (req, res) => {
       try {
+        if (!req.user) {
+          return res.status(401).json({ message: "Not authenticated" });
+        }
+        
         // Get both faculty and HOD users for subject assignments
         const facultyUsers = await storage.getUsersByRole(roles.FACULTY);
         const hodUsers = await storage.getUsersByRole(roles.HOD);
         
+        if (!facultyUsers || !hodUsers) {
+          return res.status(500).json({ message: "Failed to fetch teaching users" });
+        }
+        
+        // Debug log to check the data format
+        console.log("Faculty users retrieved:", facultyUsers);
+        console.log("HOD users retrieved:", hodUsers);
+        
         // Explicitly cast users to avoid issues with password property
         const sanitizedFacultyUsers = facultyUsers.map(user => ({
           id: user.id,
-          name: user.name,
+          name: user.name || "Unknown Faculty",  // Handle missing name
           username: user.username,
           role: user.role,
-          departmentId: user.departmentId
+          departmentId: user.departmentId || null  // Handle undefined departmentId
         }));
 
         const sanitizedHodUsers = hodUsers.map(user => ({
           id: user.id,
-          name: user.name,
+          name: user.name || "Unknown HOD",  // Handle missing name
           username: user.username,
           role: user.role,
-          departmentId: user.departmentId
+          departmentId: user.departmentId || null  // Handle undefined departmentId
         }));
         
         // Combine the sanitized users
         const teachingUsers = [...sanitizedFacultyUsers, ...sanitizedHodUsers];
         
+        console.log("Teaching users being sent:", teachingUsers);
         res.json(teachingUsers);
       } catch (error) {
         console.error("Error fetching teaching users:", error);
