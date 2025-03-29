@@ -151,6 +151,8 @@ export interface IStorage {
   updateSystemSetting(id: number, setting: Partial<InsertSystemSetting>): Promise<SystemSetting | undefined>;
   getLogoUrl(): Promise<string | undefined>;
   updateLogoUrl(url: string, userId: number): Promise<SystemSetting | undefined>;
+  getCollegeTitle(): Promise<{ collegeTitle: string; instituteName: string; systemName: string }>;
+  updateCollegeTitle(collegeTitle: string, instituteName: string, systemName: string, userId: number): Promise<boolean>;
 
   // Session Store
   sessionStore: session.SessionStore;
@@ -814,6 +816,66 @@ export class MemStorage implements IStorage {
       });
     }
   }
+
+  async getCollegeTitle(): Promise<{ collegeTitle: string; instituteName: string; systemName: string }> {
+    const collegeTitleSetting = await this.getSystemSetting('college_title');
+    const instituteNameSetting = await this.getSystemSetting('institute_name');
+    const systemNameSetting = await this.getSystemSetting('system_name');
+    
+    return {
+      collegeTitle: collegeTitleSetting?.value || 'SOUNDARYA',
+      instituteName: instituteNameSetting?.value || 'INSTITUTE OF MANAGEMENT AND SCIENCE',
+      systemName: systemNameSetting?.value || 'COPO Management System'
+    };
+  }
+
+  async updateCollegeTitle(collegeTitle: string, instituteName: string, systemName: string, userId: number): Promise<boolean> {
+    try {
+      // Update or create college title setting
+      const collegeTitleSetting = await this.getSystemSetting('college_title');
+      if (collegeTitleSetting) {
+        await this.updateSystemSetting(collegeTitleSetting.id, { value: collegeTitle });
+      } else {
+        await this.createSystemSetting({
+          key: 'college_title',
+          value: collegeTitle,
+          description: 'College title',
+          updatedBy: userId
+        });
+      }
+      
+      // Update or create institute name setting
+      const instituteNameSetting = await this.getSystemSetting('institute_name');
+      if (instituteNameSetting) {
+        await this.updateSystemSetting(instituteNameSetting.id, { value: instituteName });
+      } else {
+        await this.createSystemSetting({
+          key: 'institute_name',
+          value: instituteName,
+          description: 'Institute name',
+          updatedBy: userId
+        });
+      }
+      
+      // Update or create system name setting
+      const systemNameSetting = await this.getSystemSetting('system_name');
+      if (systemNameSetting) {
+        await this.updateSystemSetting(systemNameSetting.id, { value: systemName });
+      } else {
+        await this.createSystemSetting({
+          key: 'system_name',
+          value: systemName,
+          description: 'System name',
+          updatedBy: userId
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating college title:', error);
+      return false;
+    }
+  }
 }
 
 // Database storage implementation
@@ -1397,6 +1459,66 @@ export class DatabaseStorage implements IStorage {
         description: 'College logo URL',
         updatedBy: userId
       });
+    }
+  }
+  
+  async getCollegeTitle(): Promise<{ collegeTitle: string; instituteName: string; systemName: string }> {
+    const collegeTitleSetting = await this.getSystemSetting('college_title');
+    const instituteNameSetting = await this.getSystemSetting('institute_name');
+    const systemNameSetting = await this.getSystemSetting('system_name');
+    
+    return {
+      collegeTitle: collegeTitleSetting?.value || 'SOUNDARYA',
+      instituteName: instituteNameSetting?.value || 'INSTITUTE OF MANAGEMENT AND SCIENCE',
+      systemName: systemNameSetting?.value || 'COPO Management System'
+    };
+  }
+
+  async updateCollegeTitle(collegeTitle: string, instituteName: string, systemName: string, userId: number): Promise<boolean> {
+    try {
+      // Update or create college title setting
+      const collegeTitleSetting = await this.getSystemSetting('college_title');
+      if (collegeTitleSetting) {
+        await this.updateSystemSetting(collegeTitleSetting.id, { value: collegeTitle });
+      } else {
+        await this.createSystemSetting({
+          key: 'college_title',
+          value: collegeTitle,
+          description: 'College title',
+          updatedBy: userId
+        });
+      }
+      
+      // Update or create institute name setting
+      const instituteNameSetting = await this.getSystemSetting('institute_name');
+      if (instituteNameSetting) {
+        await this.updateSystemSetting(instituteNameSetting.id, { value: instituteName });
+      } else {
+        await this.createSystemSetting({
+          key: 'institute_name',
+          value: instituteName,
+          description: 'Institute name',
+          updatedBy: userId
+        });
+      }
+      
+      // Update or create system name setting
+      const systemNameSetting = await this.getSystemSetting('system_name');
+      if (systemNameSetting) {
+        await this.updateSystemSetting(systemNameSetting.id, { value: systemName });
+      } else {
+        await this.createSystemSetting({
+          key: 'system_name',
+          value: systemName,
+          description: 'System name',
+          updatedBy: userId
+        });
+      }
+      
+      return true;
+    } catch (error) {
+      console.error('Error updating college title:', error);
+      return false;
     }
   }
 }

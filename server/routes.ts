@@ -1318,6 +1318,67 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   );
+  
+  app.get(
+    "/api/settings/college-title",
+    async (req, res) => {
+      try {
+        const collegeTitleData = await storage.getCollegeTitle();
+        res.json(collegeTitleData);
+      } catch (error) {
+        console.error("Error getting college title:", error);
+        res.status(500).json({ message: "Failed to get college title" });
+      }
+    }
+  );
+  
+  app.post(
+    "/api/settings/college-title",
+    checkRole([roles.ADMIN]),
+    logActivity("updated", "system-setting"),
+    async (req, res) => {
+      try {
+        const { collegeTitle, instituteName, systemName } = req.body;
+        
+        if (
+          !collegeTitle || typeof collegeTitle !== 'string' ||
+          !instituteName || typeof instituteName !== 'string' ||
+          !systemName || typeof systemName !== 'string'
+        ) {
+          return res.status(400).json({ 
+            message: "College title, institute name, and system name are required and must be strings" 
+          });
+        }
+        
+        if (!req.user) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        const success = await storage.updateCollegeTitle(
+          collegeTitle, 
+          instituteName,
+          systemName,
+          req.user.id
+        );
+        
+        if (success) {
+          res.status(200).json({ 
+            success: true,
+            message: "College title updated successfully",
+            data: { collegeTitle, instituteName, systemName }
+          });
+        } else {
+          res.status(500).json({ 
+            success: false,
+            message: "Failed to update college title" 
+          });
+        }
+      } catch (error) {
+        console.error("Error updating college title:", error);
+        res.status(500).json({ message: "Failed to update college title" });
+      }
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;
