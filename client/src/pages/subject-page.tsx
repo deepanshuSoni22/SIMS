@@ -61,9 +61,9 @@ export default function SubjectPage() {
     queryKey: ["/api/departments"],
   });
 
-  // Fetch faculty users for assignment
-  const { data: facultyUsers } = useQuery<UserType[]>({
-    queryKey: [`/api/users/role/${roles.FACULTY}`],
+  // Fetch both faculty and HOD users for assignment
+  const { data: teachingUsers } = useQuery<UserType[]>({
+    queryKey: [`/api/users/teaching`],
   });
   
   // Fetch subject assignments to display assigned faculty
@@ -107,7 +107,7 @@ export default function SubjectPage() {
       console.log("Subject assignment successful:", data);
       
       // Get the faculty name for the success message
-      const faculty = facultyUsers?.find(f => f.id === data.facultyId);
+      const faculty = teachingUsers?.find(f => f.id === data.facultyId);
       const subject = subjects?.find(s => s.id === data.subjectId);
       
       toast({
@@ -378,7 +378,7 @@ export default function SubjectPage() {
                   filteredSubjects.map((subject) => {
                     const department = departments?.find(d => d.id === subject.departmentId);
                     const assignment = subjectAssignments?.find(a => a.subjectId === subject.id);
-                    const assignedFaculty = assignment ? facultyUsers?.find(f => f.id === assignment.facultyId) : undefined;
+                    const assignedFaculty = assignment ? teachingUsers?.find(f => f.id === assignment.facultyId) : undefined;
                     
                     return (
                       <TableRow key={subject.id}>
@@ -733,9 +733,9 @@ export default function SubjectPage() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {facultyUsers?.map((faculty) => (
+                        {teachingUsers?.map((faculty) => (
                           <SelectItem key={faculty.id} value={faculty.id.toString()}>
-                            {faculty.name}
+                            {faculty.name} {faculty.role === roles.HOD ? "(HOD)" : ""}
                           </SelectItem>
                         ))}
                       </SelectContent>
@@ -780,7 +780,7 @@ export default function SubjectPage() {
                     {subjectAssignments
                       ?.filter(a => a.subjectId === selectedSubject.id)
                       .map(assignment => {
-                        const faculty = facultyUsers?.find(f => f.id === assignment.facultyId);
+                        const faculty = teachingUsers?.find(f => f.id === assignment.facultyId);
                         return (
                           <div key={assignment.id} className="flex items-center gap-3 p-3 rounded-md border">
                             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">

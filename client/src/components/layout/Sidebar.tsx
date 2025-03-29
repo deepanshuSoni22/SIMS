@@ -121,7 +121,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
             </Avatar>
             <div className="ml-3">
               <p className="font-medium text-gray-800">{user?.name}</p>
-              <p className="text-sm text-gray-500">{user?.role.charAt(0).toUpperCase() + user?.role.slice(1)}</p>
+              <p className="text-sm text-gray-500">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User"}</p>
             </div>
           </div>
           

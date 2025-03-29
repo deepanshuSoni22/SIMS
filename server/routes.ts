@@ -450,6 +450,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
   
+  // Add endpoint for teaching users (Faculty + HOD)
+  app.get(
+    "/api/users/teaching",
+    async (req, res) => {
+      try {
+        // Get both faculty and HOD users for subject assignments
+        const facultyUsers = await storage.getUsersByRole(roles.FACULTY);
+        const hodUsers = await storage.getUsersByRole(roles.HOD);
+        
+        // Combine and sanitize the users (remove password)
+        const teachingUsers = [...facultyUsers, ...hodUsers].map(
+          ({ password, ...rest }) => rest
+        );
+        
+        res.json(teachingUsers);
+      } catch (error) {
+        console.error("Error fetching teaching users:", error);
+        res.status(500).json({ message: "Internal server error" });
+      }
+    }
+  );
+  
   // Subject Assignment Routes
   app.get(
     "/api/subject-assignments", 
