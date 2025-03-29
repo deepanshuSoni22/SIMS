@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { useAuth, roles, registerUserSchema } from "@/hooks/use-auth";
+import { useLogo } from "@/hooks/use-logo";
 import { useLocation } from "wouter";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -13,7 +14,6 @@ import { Input } from "@/components/ui/input";
 import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import soundaryaLogo from "../assets/soundarya_logo.png";
 
 const loginSchema = z.object({
   username: z.string().min(1, "Username is required"),
@@ -26,6 +26,7 @@ type RegisterFormValues = z.infer<typeof registerUserSchema>;
 export default function AuthPage() {
   const [activeTab, setActiveTab] = useState<string>("login");
   const { loginMutation, registerMutation, user } = useAuth();
+  const { logoUrl } = useLogo();
   const [location, navigate] = useLocation();
   
   // Check if there are any users in the system
@@ -105,7 +106,7 @@ export default function AuthPage() {
         <Card className="w-full max-w-md">
           <CardHeader className="space-y-1">
             <div className="flex justify-center mb-2">
-              <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-24 w-auto" />
+              <img src={logoUrl} alt="College Logo" className="h-24 w-auto" />
             </div>
             <CardTitle className="text-2xl text-center font-bold">
               <div className="text-purple-700">SOUNDARYA</div>
@@ -298,7 +299,7 @@ export default function AuthPage() {
       {/* Right side - Hero */}
       <div className="w-full md:w-1/2 bg-gradient-to-br from-purple-700 via-purple-600 to-amber-700 hidden md:flex flex-col justify-center items-center p-8 text-white">
         <div className="max-w-md text-center">
-          <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-32 w-auto mx-auto mb-6" />
+          <img src={logoUrl} alt="College Logo" className="h-32 w-auto mx-auto mb-6" />
           <h1 className="text-3xl font-bold mb-2">
             SOUNDARYA
           </h1>

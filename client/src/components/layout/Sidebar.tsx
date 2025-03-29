@@ -1,9 +1,9 @@
 import { useAuth, roles } from "@/hooks/use-auth";
+import { useLogo } from "@/hooks/use-logo";
 import { useLocation, Link } from "wouter";
 import { LogOut, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import soundaryaLogo from "../../assets/soundarya_logo.png";
 
 interface SidebarProps {
   isOpen: boolean;
@@ -19,6 +19,7 @@ type NavItem = {
 
 export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
   const { user, logoutMutation } = useAuth();
+  const { logoUrl } = useLogo();
   const [location, setLocation] = useLocation();
 
   const handleLogout = () => {
@@ -120,9 +121,9 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
         )}
       >
         <div className="flex flex-col h-full">
-          {/* App Logo with Soundarya Logo */}
+          {/* App Logo with College Logo */}
           <div className="bg-primary p-2 text-white flex flex-col items-center justify-center">
-            <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-16 w-auto mb-1" />
+            <img src={logoUrl} alt="College Logo" className="h-16 w-auto mb-1" />
             <h1 className="text-lg font-medium">COPO System</h1>
           </div>
           

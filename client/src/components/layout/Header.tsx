@@ -1,4 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
+import { useLogo } from "@/hooks/use-logo";
 import { HelpCircle, Menu, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -10,7 +11,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import soundaryaLogo from "../../assets/soundarya_logo.png";
 import { Link } from "wouter";
 import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 
@@ -21,6 +21,7 @@ interface HeaderProps {
 
 export default function Header({ toggleSidebar, title }: HeaderProps) {
   const { user, logoutMutation } = useAuth();
+  const { logoUrl } = useLogo();
 
   const handleLogout = () => {
     logoutMutation.mutate(undefined, {
@@ -52,7 +53,7 @@ export default function Header({ toggleSidebar, title }: HeaderProps) {
             <Menu className="h-5 w-5 text-gray-500" />
           </Button>
           <div className="flex items-center">
-            <img src={soundaryaLogo} alt="Soundarya Institute Logo" className="h-10 w-auto mr-3 hidden md:block" />
+            <img src={logoUrl} alt="College Logo" className="h-10 w-auto mr-3 hidden md:block" />
             <h1 className="ml-3 lg:ml-0 text-lg lg:text-xl font-medium text-gray-800">
               {title}
             </h1>
