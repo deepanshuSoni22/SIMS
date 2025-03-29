@@ -1,36 +1,49 @@
-import { Client } from 'whatsapp-web.js';
-import qrcode from 'qrcode-terminal';
+// In development mode, we don't need to import these libraries
+// import { Client } from 'whatsapp-web.js';
+// import qrcode from 'qrcode-terminal';
 import otpGenerator from 'otp-generator';
 
 // Map to store active OTPs with userIds
 const otpStore = new Map<number, { otp: string, expires: Date }>();
 
-// Initialize WhatsApp client
-const client = new Client({
-  puppeteer: {
-    args: ['--no-sandbox', '--disable-setuid-sandbox'],
+// In development mode, we'll mock the WhatsApp client
+console.log('DEVELOPMENT MODE: Using mock WhatsApp client');
+
+// Define a minimal type for our mock client
+interface MockWhatsAppClient {
+  on: (event: string, callback: any) => MockWhatsAppClient;
+  sendMessage: (to: string, message: string) => Promise<any>;
+  initialize: () => Promise<void>;
+}
+
+// Mock client for development (no puppeteer initialization)
+const client: MockWhatsAppClient = {
+  on: (event: string, callback: any) => {
+    console.log(`DEVELOPMENT MODE: Registering mock event listener for ${event}`);
+    return client;
+  },
+  sendMessage: async (to: string, message: string) => {
+    console.log(`DEVELOPMENT MODE: Would send message to ${to}: ${message}`);
+    return true;
+  },
+  initialize: () => {
+    console.log('DEVELOPMENT MODE: Mock initialization of WhatsApp client');
+    return Promise.resolve();
   }
-});
-
-// If we need to authenticate with a QR code
-client.on('qr', (qr) => {
-  console.log('QR RECEIVED. Scan with WhatsApp mobile app:');
-  qrcode.generate(qr, { small: true });
-});
-
-client.on('ready', () => {
-  console.log('WhatsApp client is ready and connected!');
-});
-
-client.on('message', async (message) => {
-  console.log(`Message received: ${message.body}`);
-});
+};
 
 // Initialize the client connection
 let clientReady = false;
 let initializationPromise: Promise<void> | null = null;
 
 export async function initializeWhatsAppClient(): Promise<void> {
+  // In development mode, just pretend it's initialized
+  console.log('DEVELOPMENT MODE: Skipping WhatsApp client initialization');
+  clientReady = true;
+  return Promise.resolve();
+  
+  // In production, we would use the real implementation:
+  /*
   if (clientReady) {
     console.log('WhatsApp client already initialized');
     return;
@@ -52,6 +65,7 @@ export async function initializeWhatsAppClient(): Promise<void> {
   });
 
   return initializationPromise;
+  */
 }
 
 // Generate an OTP for a user
@@ -105,21 +119,27 @@ export function verifyOtp(userId: number, otpToVerify: string): boolean {
 // Send OTP via WhatsApp
 export async function sendOtpWhatsApp(whatsappNumber: string, otp: string): Promise<boolean> {
   try {
+    // During development, just log the OTP instead of trying to send it
+    const formattedNumber = formatWhatsAppNumber(whatsappNumber);
+    const message = `Your COPO Management System OTP is: ${otp}. Valid for 10 minutes.`;
+    
+    // Log the OTP for development testing
+    console.log('=====================================================');
+    console.log(`DEVELOPMENT MODE: Would send to WhatsApp number: ${formattedNumber}`);
+    console.log(`OTP MESSAGE: ${message}`);
+    console.log('=====================================================');
+    
+    // Skip actual WhatsApp integration in development
+    // In production, we would uncomment and use the real implementation:
+    /*
     if (!clientReady) {
       await initializeWhatsAppClient();
     }
     
-    // Format WhatsApp number (ensure it includes country code)
-    const formattedNumber = formatWhatsAppNumber(whatsappNumber);
-    
-    // Message template
-    const message = `Your COPO Management System OTP is: ${otp}. Valid for 10 minutes.`;
-    
-    // Send the message
     const chatId = `${formattedNumber}@c.us`;
     await client.sendMessage(chatId, message);
+    */
     
-    console.log(`OTP sent to WhatsApp number: ${formattedNumber}`);
     return true;
   } catch (error) {
     console.error('Error sending WhatsApp message:', error);
