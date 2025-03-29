@@ -381,12 +381,42 @@ export default function UserManagementPage() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                onClick={() => {
-                  // Force refetch both users and departments queries
-                  queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-                  queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-                  refetch();
+                onClick={async () => {
+                  // Force refetch both users and departments queries with a loading state
+                  const refreshStart = () => {
+                    // Show toast for refresh operation
+                    toast({
+                      title: "Refreshing data...",
+                      description: "Fetching the latest user and department data."
+                    });
+                  };
+                  
+                  const refreshComplete = () => {
+                    // Show completion toast
+                    toast({
+                      title: "Data refreshed",
+                      description: "User and department data is now up to date."
+                    });
+                  };
+                  
+                  refreshStart();
+                  try {
+                    // Set loading state
+                    await Promise.all([
+                      queryClient.invalidateQueries({ queryKey: ["/api/users"] }),
+                      queryClient.invalidateQueries({ queryKey: ["/api/departments"] }),
+                      refetch()
+                    ]);
+                    refreshComplete();
+                  } catch (error) {
+                    toast({
+                      title: "Refresh failed",
+                      description: "There was an error fetching the latest data.",
+                      variant: "destructive"
+                    });
+                  }
                 }}
+                disabled={isLoading}
               >
                 <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>

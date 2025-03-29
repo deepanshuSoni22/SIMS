@@ -18,6 +18,7 @@ type AuthContextType = {
   loginMutation: UseMutationResult<UserWithoutPassword, Error, LoginData>;
   logoutMutation: UseMutationResult<void, Error, void>;
   registerMutation: UseMutationResult<UserWithoutPassword, Error, RegisterData>;
+  refetchUser: () => Promise<any>;
 };
 
 type LoginData = Pick<InsertUser, "username" | "password">;
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     data: user,
     error,
     isLoading,
+    refetch: refetchUser
   } = useQuery<UserWithoutPassword | undefined, Error>({
     queryKey: ["/api/user"],
     queryFn: getQueryFn({ on401: "returnNull" }),
@@ -113,6 +115,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     },
   });
 
+  // We'll use refetchUser directly without wrapping it
+
   return (
     <AuthContext.Provider
       value={{
@@ -122,6 +126,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         loginMutation,
         logoutMutation,
         registerMutation,
+        refetchUser
       }}
     >
       {children}

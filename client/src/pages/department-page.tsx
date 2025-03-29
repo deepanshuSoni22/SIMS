@@ -44,7 +44,7 @@ type DepartmentFormValues = z.infer<typeof insertDepartmentSchema>;
 
 export default function DepartmentPage() {
   const { toast } = useToast();
-  const { user } = useAuth();
+  const { user, refetchUser } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
   const [isAddDepartmentDialogOpen, setIsAddDepartmentDialogOpen] = useState(false);
   const [isEditDepartmentDialogOpen, setIsEditDepartmentDialogOpen] = useState(false);
@@ -99,6 +99,10 @@ export default function DepartmentPage() {
       // Invalidate departments and users queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      // Refresh user data if user is a HOD
+      if (user?.role === roles.HOD) {
+        refetchUser();
+      }
       setIsAddDepartmentDialogOpen(false);
       form.reset();
     },
@@ -125,6 +129,10 @@ export default function DepartmentPage() {
       // Invalidate departments and users queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      // Refresh user data if user is a HOD
+      if (user?.role === roles.HOD) {
+        refetchUser();
+      }
       setIsEditDepartmentDialogOpen(false);
       setSelectedDepartment(null);
       editForm.reset();
@@ -151,6 +159,10 @@ export default function DepartmentPage() {
       // Invalidate departments and users queries to refresh the lists
       queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
       queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      // Refresh user data if user is a HOD
+      if (user?.role === roles.HOD) {
+        refetchUser();
+      }
       setIsDeleteDialogOpen(false);
       setSelectedDepartment(null);
     },
@@ -250,8 +262,41 @@ export default function DepartmentPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="icon" onClick={() => refetch()}>
-                <RefreshCw className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={async () => {
+                  // Force refetch with loading state
+                  toast({
+                    title: "Refreshing data...",
+                    description: "Fetching the latest department and user data."
+                  });
+                  
+                  try {
+                    // Set loading state
+                    await Promise.all([
+                      queryClient.invalidateQueries({ queryKey: ["/api/departments"] }),
+                      queryClient.invalidateQueries({ queryKey: ["/api/users"] }),
+                      refetch(),
+                      // Also refresh the current user data to update HOD departmentId if needed
+                      user?.role === roles.HOD ? refetchUser() : Promise.resolve()
+                    ]);
+                    
+                    toast({
+                      title: "Data refreshed",
+                      description: "Department and user data is now up to date."
+                    });
+                  } catch (error) {
+                    toast({
+                      title: "Refresh failed",
+                      description: "There was an error fetching the latest data.",
+                      variant: "destructive"
+                    });
+                  }
+                }}
+                disabled={isLoading}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </div>

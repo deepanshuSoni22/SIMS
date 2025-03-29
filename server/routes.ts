@@ -291,17 +291,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const department = await storage.createDepartment(departmentData);
         
         // If HOD ID is being set when creating the department
-        if (departmentData.hodId) {
-          // Check if hodId is null, if so skip the update
-          if (departmentData.hodId !== null) {
-            // Update the HOD's departmentId to match the current department
-            const hodUser = await storage.getUser(departmentData.hodId);
-            
-            if (hodUser) {
-              await storage.updateUser(departmentData.hodId, { 
-                departmentId: department.id 
-              });
+        if (departmentData.hodId !== undefined && departmentData.hodId !== null) {
+          // Check if the user is already assigned as a HOD to another department
+          const hodUser = await storage.getUser(departmentData.hodId);
+          
+          if (hodUser) {
+            // If the user is already assigned to another department as HOD
+            if (hodUser.departmentId !== null) {
+              // Get the department the HOD is assigned to
+              const previousDepartment = await storage.getDepartmentByHodId(departmentData.hodId);
+              
+              if (previousDepartment) {
+                console.log(`User ${hodUser.name} is already HOD of department ${previousDepartment.name}. Removing hodId from that department.`);
+                // Update the previous department to remove the HOD reference
+                await storage.updateDepartment(previousDepartment.id, { hodId: null });
+              }
             }
+            
+            console.log(`Setting departmentId=${department.id} for user ${hodUser.name}`);
+            // Update the HOD's departmentId to match the new department
+            await storage.updateUser(departmentData.hodId, { 
+              departmentId: department.id 
+            });
           }
         }
         
@@ -334,14 +345,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Department not found" });
         }
         
-        // If HOD ID is being updated, update HOD's departmentId as well
-        if (req.body.hodId) {
-          // Check if hodId is null, if so skip the update
+        // If HOD ID is being updated, update HODs' departmentId
+        if (req.body.hodId !== undefined) {
+          // Get the original department to check for previous HOD
+          const originalDepartment = await storage.getDepartment(departmentId);
+          
+          // If there was a previous HOD, remove their departmentId
+          if (originalDepartment && originalDepartment.hodId && originalDepartment.hodId !== req.body.hodId) {
+            const previousHod = await storage.getUser(originalDepartment.hodId);
+            if (previousHod) {
+              console.log(`Removing departmentId from previous HOD: ${previousHod.name}`);
+              await storage.updateUser(originalDepartment.hodId, { departmentId: null });
+            }
+          }
+          
+          // Check if new hodId is null, if so skip the update for the new HOD
           if (req.body.hodId !== null) {
-            // Get the current user to ensure they exist and aren't already assigned to this department
+            // Get the current user to ensure they exist
             const hodUser = await storage.getUser(req.body.hodId);
             
             if (hodUser) {
+              console.log(`Updating new HOD: ${hodUser.name} to department ${departmentId}`);
               // Update the HOD's departmentId to match the current department
               await storage.updateUser(req.body.hodId, { 
                 departmentId: departmentId 
@@ -377,6 +401,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         if (!existingDepartment) {
           return res.status(404).json({ message: "Department not found" });
+        }
+        
+        // If department has a HOD, remove departmentId from the HOD's record
+        if (existingDepartment.hodId) {
+          const hodUser = await storage.getUser(existingDepartment.hodId);
+          if (hodUser) {
+            console.log(`Removing departmentId from HOD ${hodUser.name} before deleting department`);
+            await storage.updateUser(existingDepartment.hodId, { departmentId: null });
+          }
         }
         
         const success = await storage.deleteDepartment(departmentId);
