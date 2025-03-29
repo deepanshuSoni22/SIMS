@@ -286,13 +286,6 @@ export default function SubjectPage() {
           <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
           <p className="text-gray-500">Manage academic subjects and assignments</p>
         </div>
-        
-        {canCreateSubject && (
-          <Button onClick={() => setIsAddSubjectDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-2" />
-            Add Subject
-          </Button>
-        )}
       </div>
 
       <Card>

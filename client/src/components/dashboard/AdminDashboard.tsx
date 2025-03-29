@@ -3,7 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { 
   Users, School, BookOpen, FileCheck, 
-  UserPlus, Building2, FolderPlus, FileBarChart2
+  UserPlus, Building2, FileBarChart2
 } from "lucide-react";
 import StatCard from "./StatCard";
 import AttainmentChart from "./AttainmentChart";
@@ -212,12 +212,12 @@ export default function AdminDashboard() {
             
             <Link href="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
-                <div className="bg-purple-700 bg-opacity-10 p-2 rounded-full">
-                  <FolderPlus className="h-5 w-5 text-purple-700" />
+                <div className="bg-primary bg-opacity-10 p-2 rounded-full">
+                  <Users className="h-5 w-5 text-primary" />
                 </div>
                 <div className="ml-3">
-                  <h3 className="text-sm font-medium text-gray-800">Add New Subject</h3>
-                  <p className="text-xs text-gray-500">Create a new course subject</p>
+                  <h3 className="text-sm font-medium text-gray-800">Manage Subjects</h3>
+                  <p className="text-xs text-gray-500">Create and assign subjects to faculty</p>
                 </div>
               </div>
             </Link>

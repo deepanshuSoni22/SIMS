@@ -2,7 +2,7 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "wouter";
 import { 
-  Users, BookOpen, FileCheck, FolderPlus, FileBarChart2
+  Users, BookOpen, FileCheck, FileBarChart2
 } from "lucide-react";
 import StatCard from "./StatCard";
 import AttainmentChart from "./AttainmentChart";
@@ -274,19 +274,7 @@ export default function HodDashboard() {
           <div className="p-4 border-b">
             <h2 className="text-lg font-medium text-gray-800">Quick Actions</h2>
           </div>
-          <div className="p-4 grid grid-cols-1 md:grid-cols-3 gap-4">
-            <Link to="/subjects?action=add" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-              <div className="flex items-center">
-                <div className="bg-purple-700 bg-opacity-10 p-2 rounded-full">
-                  <FolderPlus className="h-5 w-5 text-purple-700" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-gray-800">Add New Subject</h3>
-                  <p className="text-xs text-gray-500">Create a new course subject</p>
-                </div>
-              </div>
-            </Link>
-            
+          <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link to={subjects && subjects.length > 0 
                   ? `/subjects?action=assign&subjectId=${subjects[0].id}` 
                   : "/subjects"} 
@@ -297,7 +285,7 @@ export default function HodDashboard() {
                 </div>
                 <div className="ml-3">
                   <h3 className="text-sm font-medium text-gray-800">Assign Subjects</h3>
-                  <p className="text-xs text-gray-500">Assign subjects to faculty</p>
+                  <p className="text-xs text-gray-500">Create and assign subjects to faculty</p>
                 </div>
               </div>
             </Link>
