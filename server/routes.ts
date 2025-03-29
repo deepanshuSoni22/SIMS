@@ -1379,6 +1379,136 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
     }
   );
+  
+  // General Settings Routes
+  app.get(
+    "/api/settings/general",
+    async (req, res) => {
+      try {
+        // Get academic year setting
+        const academicYearSetting = await storage.getSystemSetting('academic_year');
+        const academicYear = academicYearSetting ? academicYearSetting.value : '2024-2025';
+        
+        // Get direct attainment weight setting
+        const directWeightSetting = await storage.getSystemSetting('direct_attainment_weight');
+        const directAttainmentWeight = directWeightSetting ? parseInt(directWeightSetting.value) : 80;
+        
+        // Get indirect attainment weight setting
+        const indirectWeightSetting = await storage.getSystemSetting('indirect_attainment_weight');
+        const indirectAttainmentWeight = indirectWeightSetting ? parseInt(indirectWeightSetting.value) : 20;
+        
+        // Get attainment threshold setting
+        const thresholdSetting = await storage.getSystemSetting('attainment_threshold');
+        const attainmentThreshold = thresholdSetting ? parseInt(thresholdSetting.value) : 60;
+        
+        res.status(200).json({
+          academicYear,
+          directAttainmentWeight,
+          indirectAttainmentWeight,
+          attainmentThreshold
+        });
+      } catch (error) {
+        console.error("Error getting general settings:", error);
+        res.status(500).json({ message: "Failed to get general settings" });
+      }
+    }
+  );
+  
+  // Update General Settings Route
+  app.post(
+    "/api/settings/general",
+    checkRole([roles.ADMIN]),
+    logActivity("updated", "system-setting"),
+    async (req, res) => {
+      try {
+        const { academicYear, directAttainmentWeight, indirectAttainmentWeight, attainmentThreshold } = req.body;
+        
+        if (!academicYear || typeof academicYear !== 'string') {
+          return res.status(400).json({ message: "Academic year is required and must be a string" });
+        }
+        
+        if (
+          directAttainmentWeight === undefined || typeof directAttainmentWeight !== 'number' ||
+          indirectAttainmentWeight === undefined || typeof indirectAttainmentWeight !== 'number' ||
+          attainmentThreshold === undefined || typeof attainmentThreshold !== 'number'
+        ) {
+          return res.status(400).json({ 
+            message: "Direct attainment weight, indirect attainment weight, and attainment threshold are required and must be numbers" 
+          });
+        }
+        
+        if (!req.user) {
+          return res.status(401).json({ message: "Unauthorized" });
+        }
+        
+        // Update academic year setting
+        let academicYearSetting = await storage.getSystemSetting('academic_year');
+        if (academicYearSetting) {
+          await storage.updateSystemSetting(academicYearSetting.id, { value: academicYear });
+        } else {
+          await storage.createSystemSetting({
+            key: 'academic_year',
+            value: academicYear,
+            description: 'Current academic year',
+            updatedBy: req.user.id
+          });
+        }
+        
+        // Update direct attainment weight setting
+        let directWeightSetting = await storage.getSystemSetting('direct_attainment_weight');
+        if (directWeightSetting) {
+          await storage.updateSystemSetting(directWeightSetting.id, { value: directAttainmentWeight.toString() });
+        } else {
+          await storage.createSystemSetting({
+            key: 'direct_attainment_weight',
+            value: directAttainmentWeight.toString(),
+            description: 'Weight for direct assessment methods (in percentage)',
+            updatedBy: req.user.id
+          });
+        }
+        
+        // Update indirect attainment weight setting
+        let indirectWeightSetting = await storage.getSystemSetting('indirect_attainment_weight');
+        if (indirectWeightSetting) {
+          await storage.updateSystemSetting(indirectWeightSetting.id, { value: indirectAttainmentWeight.toString() });
+        } else {
+          await storage.createSystemSetting({
+            key: 'indirect_attainment_weight',
+            value: indirectAttainmentWeight.toString(),
+            description: 'Weight for indirect assessment methods (in percentage)',
+            updatedBy: req.user.id
+          });
+        }
+        
+        // Update attainment threshold setting
+        let thresholdSetting = await storage.getSystemSetting('attainment_threshold');
+        if (thresholdSetting) {
+          await storage.updateSystemSetting(thresholdSetting.id, { value: attainmentThreshold.toString() });
+        } else {
+          await storage.createSystemSetting({
+            key: 'attainment_threshold',
+            value: attainmentThreshold.toString(),
+            description: 'Minimum percentage required to consider an outcome as attained',
+            updatedBy: req.user.id
+          });
+        }
+        
+        res.status(200).json({
+          success: true,
+          message: "General settings updated successfully",
+          data: {
+            academicYear,
+            directAttainmentWeight,
+            indirectAttainmentWeight,
+            attainmentThreshold
+          }
+        });
+      } catch (error) {
+        console.error("Error updating general settings:", error);
+        res.status(500).json({ message: "Failed to update general settings" });
+      }
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;

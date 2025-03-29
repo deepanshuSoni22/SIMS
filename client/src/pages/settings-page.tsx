@@ -10,13 +10,28 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Loader2, Upload, Type } from "lucide-react";
+import { Loader2, Upload, Type, Save } from "lucide-react";
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [logoUrl, setLogoUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // College title state
+  const [titleForm, setTitleForm] = useState({
+    collegeTitle: "",
+    instituteName: "",
+    systemName: ""
+  });
+  
+  // General settings state
+  const [generalForm, setGeneralForm] = useState({
+    academicYear: '2024-2025',
+    directAttainmentWeight: 80,
+    indirectAttainmentWeight: 20,
+    attainmentThreshold: 60
+  });
   
   // Use college title hook
   const { 
@@ -27,19 +42,30 @@ export default function SettingsPage() {
     isUpdating,
     isLoading: isTitleLoading
   } = useCollegeTitle();
-  
-  // College title state
-  const [titleForm, setTitleForm] = useState({
-    collegeTitle: "",
-    instituteName: "",
-    systemName: ""
-  });
 
   // Fetch logo URL
   const { data: logoData, isLoading: isLogoLoading } = useQuery({
     queryKey: ['/api/settings/logo'],
     queryFn: async () => {
       const res = await apiRequest('GET', '/api/settings/logo');
+      return await res.json();
+    }
+  });
+  
+  // Fetch all system settings
+  const { data: settings, isLoading: isSettingsLoading } = useQuery({
+    queryKey: ['/api/settings'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/settings');
+      return await res.json();
+    }
+  });
+  
+  // Fetch general settings
+  const { data: generalSettings, isLoading: isGeneralSettingsLoading } = useQuery({
+    queryKey: ['/api/settings/general'],
+    queryFn: async () => {
+      const res = await apiRequest('GET', '/api/settings/general');
       return await res.json();
     }
   });
@@ -61,15 +87,18 @@ export default function SettingsPage() {
       });
     }
   }, [collegeTitle, instituteName, systemName]);
-
-  // Fetch all system settings
-  const { data: settings, isLoading: isSettingsLoading } = useQuery({
-    queryKey: ['/api/settings'],
-    queryFn: async () => {
-      const res = await apiRequest('GET', '/api/settings');
-      return await res.json();
+  
+  // Set the general settings form data when loaded from API
+  React.useEffect(() => {
+    if (generalSettings) {
+      setGeneralForm({
+        academicYear: generalSettings.academicYear || '2024-2025',
+        directAttainmentWeight: generalSettings.directAttainmentWeight || 80,
+        indirectAttainmentWeight: generalSettings.indirectAttainmentWeight || 20,
+        attainmentThreshold: generalSettings.attainmentThreshold || 60
+      });
     }
-  });
+  }, [generalSettings]);
 
   // Update logo URL mutation
   const updateLogoMutation = useMutation({
@@ -94,6 +123,30 @@ export default function SettingsPage() {
       });
     }
   });
+  
+  // Update general settings mutation
+  const updateGeneralSettingsMutation = useMutation({
+    mutationFn: async (formData: typeof generalForm) => {
+      const res = await apiRequest('POST', '/api/settings/general', formData);
+      return await res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/settings/general'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/settings'] });
+      toast({
+        title: "General settings updated successfully",
+        description: "The system settings have been updated.",
+        variant: "default",
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to update general settings",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
+  });
 
   const handleUpdateLogo = async () => {
     if (!logoUrl) {
@@ -110,6 +163,46 @@ export default function SettingsPage() {
 
   const handleImageUrlValidation = (e: React.ChangeEvent<HTMLInputElement>) => {
     setLogoUrl(e.target.value);
+  };
+  
+  const handleGeneralInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    let parsedValue: string | number = value;
+    
+    // Convert to number for numeric fields
+    if (name !== 'academicYear') {
+      parsedValue = parseInt(value) || 0;
+    }
+    
+    setGeneralForm(prev => ({
+      ...prev,
+      [name]: parsedValue
+    }));
+  };
+  
+  const handleUpdateGeneralSettings = () => {
+    const { academicYear, directAttainmentWeight, indirectAttainmentWeight, attainmentThreshold } = generalForm;
+    
+    if (!academicYear) {
+      toast({
+        title: "Academic year is required",
+        description: "Please enter the current academic year.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Make sure the weights add up to 100%
+    if (directAttainmentWeight + indirectAttainmentWeight !== 100) {
+      toast({
+        title: "Weights must sum to 100%",
+        description: "The direct and indirect assessment weights must add up to 100%.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateGeneralSettingsMutation.mutate(generalForm);
   };
 
   const isValidImageUrl = (url: string) => {
@@ -240,10 +333,111 @@ export default function SettingsPage() {
                   Manage general system settings for the COPO Management System.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  System-wide settings will appear here in future versions.
-                </p>
+              <CardContent className="space-y-6">
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">Academic Year Settings</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Configure the current academic year and related settings.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="academicYear">Current Academic Year</Label>
+                      <Input
+                        id="academicYear"
+                        name="academicYear"
+                        value={generalForm.academicYear}
+                        onChange={handleGeneralInputChange}
+                        placeholder="e.g., 2024-2025"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The current academic year will be used as the default for new courses and attainment calculations.
+                      </p>
+                    </div>
+                  </div>
+                </div>
+                
+                <Separator className="my-6" />
+                
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">COPO Attainment Settings</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Configure how course outcomes and program outcomes are calculated.
+                    </p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="directAttainmentWeight">Direct Attainment Weight (%)</Label>
+                      <Input
+                        id="directAttainmentWeight"
+                        name="directAttainmentWeight"
+                        type="number"
+                        value={generalForm.directAttainmentWeight}
+                        onChange={handleGeneralInputChange}
+                        min="0"
+                        max="100"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Weight given to direct assessment methods (exams, assignments).
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="indirectAttainmentWeight">Indirect Attainment Weight (%)</Label>
+                      <Input
+                        id="indirectAttainmentWeight"
+                        name="indirectAttainmentWeight"
+                        type="number"
+                        value={generalForm.indirectAttainmentWeight}
+                        onChange={handleGeneralInputChange}
+                        min="0"
+                        max="100"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        Weight given to indirect assessment methods (surveys, feedback).
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="attainmentThreshold">Attainment Threshold (%)</Label>
+                    <Input
+                      id="attainmentThreshold"
+                      name="attainmentThreshold"
+                      type="number"
+                      value={generalForm.attainmentThreshold}
+                      onChange={handleGeneralInputChange}
+                      min="0"
+                      max="100"
+                    />
+                    <p className="text-xs text-muted-foreground">
+                      Minimum percentage required to consider an outcome as attained.
+                    </p>
+                  </div>
+                </div>
+                
+                <div className="pt-4">
+                  <Button 
+                    onClick={handleUpdateGeneralSettings}
+                    disabled={updateGeneralSettingsMutation.isPending}
+                  >
+                    {updateGeneralSettingsMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save General Settings
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
