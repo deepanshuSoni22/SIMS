@@ -185,9 +185,13 @@ export default function FacultyManagementPage() {
     createFacultyMutation.mutate(data);
   };
 
-  // Handle add new faculty click
+  // Handle add new faculty click - redirects to admin for faculty creation
   const handleAddFacultyClick = () => {
-    setIsAddFacultyDialogOpen(true);
+    toast({
+      title: "Faculty Registration Restricted",
+      description: "Faculty members can only be created by the Administrator. Please contact the Principal to register new faculty.",
+      variant: "destructive",
+    });
   };
 
   return (
