@@ -96,13 +96,16 @@ export default function DepartmentPage() {
         title: "Department created successfully",
         description: "The department has been added to the system.",
       });
-      // Invalidate departments and users queries to refresh the lists
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      // Refresh user data if user is a HOD
-      if (user?.role === roles.HOD) {
-        refetchUser();
-      }
+      
+      // Invalidate all necessary queries
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/departments"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/users"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] }),
+        refetch(),
+        refetchUser()
+      ]).catch(error => console.error("Failed to refresh data:", error));
+      
       setIsAddDepartmentDialogOpen(false);
       form.reset();
     },
@@ -126,13 +129,16 @@ export default function DepartmentPage() {
         title: "Department updated successfully",
         description: "The department has been updated in the system.",
       });
-      // Invalidate departments and users queries to refresh the lists
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      // Refresh user data if user is a HOD
-      if (user?.role === roles.HOD) {
-        refetchUser();
-      }
+      
+      // Invalidate all necessary queries
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/departments"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/users"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] }),
+        refetch(),
+        refetchUser()
+      ]).catch(error => console.error("Failed to refresh data:", error));
+      
       setIsEditDepartmentDialogOpen(false);
       setSelectedDepartment(null);
       editForm.reset();
@@ -156,13 +162,16 @@ export default function DepartmentPage() {
         title: "Department deleted successfully",
         description: "The department has been removed from the system.",
       });
-      // Invalidate departments and users queries to refresh the lists
-      queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
-      // Refresh user data if user is a HOD
-      if (user?.role === roles.HOD) {
-        refetchUser();
-      }
+      
+      // Invalidate all necessary queries
+      Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["/api/departments"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/users"] }),
+        queryClient.invalidateQueries({ queryKey: ["/api/user"] }),
+        refetch(),
+        refetchUser()
+      ]).catch(error => console.error("Failed to refresh data:", error));
+      
       setIsDeleteDialogOpen(false);
       setSelectedDepartment(null);
     },
@@ -273,13 +282,13 @@ export default function DepartmentPage() {
                   });
                   
                   try {
-                    // Set loading state
+                    // Set loading state with consistent approach
                     await Promise.all([
                       queryClient.invalidateQueries({ queryKey: ["/api/departments"] }),
                       queryClient.invalidateQueries({ queryKey: ["/api/users"] }),
+                      queryClient.invalidateQueries({ queryKey: ["/api/user"] }),
                       refetch(),
-                      // Also refresh the current user data to update HOD departmentId if needed
-                      user?.role === roles.HOD ? refetchUser() : Promise.resolve()
+                      refetchUser()
                     ]);
                     
                     toast({
