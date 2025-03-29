@@ -139,7 +139,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                 return (
                   <Link 
                     key={item.path} 
-                    href={item.path}
+                    to={item.path}
                     onClick={() => closeSidebar()}
                   >
                     <div 

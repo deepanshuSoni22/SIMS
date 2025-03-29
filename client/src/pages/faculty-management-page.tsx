@@ -44,7 +44,7 @@ export default function FacultyManagementPage() {
 
   // Redirect if not an HOD
   if (user && user.role !== "hod") {
-    setLocation("/dashboard");
+    setTimeout(() => setLocation("/dashboard"), 0);
     return null;
   }
 
