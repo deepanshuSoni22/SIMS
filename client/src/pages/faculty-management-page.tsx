@@ -1,7 +1,11 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
-import { User, Department, SubjectAssignment, Subject } from "@shared/schema";
+import { User, Department, SubjectAssignment, Subject, insertUserSchema, roles } from "@shared/schema";
+import { apiRequest, queryClient } from "@/lib/queryClient";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
 import AppLayout from "@/components/layout/AppLayout";
 import {
   Card,
@@ -25,7 +29,17 @@ import {
   DialogTitle,
   DialogDescription,
   DialogFooter,
+  DialogClose,
 } from "@/components/ui/dialog";
+import { 
+  Form, 
+  FormControl, 
+  FormDescription, 
+  FormField, 
+  FormItem, 
+  FormLabel, 
+  FormMessage 
+} from "@/components/ui/form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -34,13 +48,26 @@ import {
   UserPlus, Search, BookOpen, User as UserIcon
 } from "lucide-react";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
+
+// Extended registration schema for faculty creation
+const createFacultySchema = insertUserSchema.extend({
+  confirmPassword: z.string(),
+}).refine(data => data.password === data.confirmPassword, {
+  message: "Passwords do not match",
+  path: ["confirmPassword"],
+});
+
+type CreateFacultyFormValues = z.infer<typeof createFacultySchema>;
 
 export default function FacultyManagementPage() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const [location, setLocation] = useLocation();
   const [searchTerm, setSearchTerm] = useState("");
   const [selectedFaculty, setSelectedFaculty] = useState<User | null>(null);
   const [isViewSubjectsDialogOpen, setIsViewSubjectsDialogOpen] = useState(false);
+  const [isAddFacultyDialogOpen, setIsAddFacultyDialogOpen] = useState(false);
 
   // Redirect if not an HOD
   if (user && user.role !== "hod") {
@@ -108,9 +135,59 @@ export default function FacultyManagementPage() {
     setIsViewSubjectsDialogOpen(true);
   };
 
+  // Create faculty form
+  const form = useForm<CreateFacultyFormValues>({
+    resolver: zodResolver(createFacultySchema),
+    defaultValues: {
+      name: "",
+      username: "",
+      password: "",
+      confirmPassword: "",
+      role: roles.FACULTY,
+      departmentId: user?.departmentId || null,
+    },
+  });
+
+  // Create user mutation
+  const createFacultyMutation = useMutation({
+    mutationFn: async (userData: CreateFacultyFormValues) => {
+      const { confirmPassword, ...userDataWithoutConfirm } = userData;
+      const res = await apiRequest("POST", "/api/register", userDataWithoutConfirm);
+      return await res.json();
+    },
+    onSuccess: () => {
+      toast({
+        title: "Faculty created successfully",
+        description: "The faculty member has been added to your department.",
+      });
+      // Invalidate users query to refresh the list
+      queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+      setIsAddFacultyDialogOpen(false);
+      form.reset({
+        name: "",
+        username: "",
+        password: "",
+        confirmPassword: "",
+        role: roles.FACULTY,
+        departmentId: user?.departmentId || null,
+      });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to create faculty",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const onSubmit = (data: CreateFacultyFormValues) => {
+    createFacultyMutation.mutate(data);
+  };
+
   // Handle add new faculty click
   const handleAddFacultyClick = () => {
-    setLocation("/users/new?role=faculty&departmentId=" + user?.departmentId);
+    setIsAddFacultyDialogOpen(true);
   };
 
   return (
@@ -280,6 +357,128 @@ export default function FacultyManagementPage() {
                 </div>
               )}
             </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Add Faculty Dialog */}
+        <Dialog open={isAddFacultyDialogOpen} onOpenChange={setIsAddFacultyDialogOpen}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Add New Faculty</DialogTitle>
+              <DialogDescription>
+                Create a new faculty member for the {department?.name || "your"} department.
+              </DialogDescription>
+            </DialogHeader>
+            
+            <Form {...form}>
+              <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4 mt-4">
+                <FormField
+                  control={form.control}
+                  name="name"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Full Name</FormLabel>
+                      <FormControl>
+                        <Input placeholder="John Doe" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="username"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Username</FormLabel>
+                      <FormControl>
+                        <Input placeholder="johndoe" {...field} />
+                      </FormControl>
+                      <FormDescription>
+                        Username will be used for login.
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="******" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="confirmPassword"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Confirm Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="******" {...field} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="departmentId"
+                  render={({ field }) => (
+                    <FormItem className="hidden">
+                      <FormControl>
+                        <Input {...field} />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                <DialogFooter className="mt-6">
+                  <Button 
+                    type="button" 
+                    variant="outline" 
+                    onClick={() => setIsAddFacultyDialogOpen(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    type="submit" 
+                    disabled={createFacultyMutation.isPending}
+                  >
+                    {createFacultyMutation.isPending ? (
+                      <>
+                        <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></div>
+                        Creating...
+                      </>
+                    ) : (
+                      <>Add Faculty</>
+                    )}
+                  </Button>
+                </DialogFooter>
+              </form>
+            </Form>
           </DialogContent>
         </Dialog>
       </div>
