@@ -59,7 +59,7 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
       title: "Subjects", 
       icon: "book", 
       path: "/subjects", 
-      allowedRoles: [roles.ADMIN, roles.HOD, roles.FACULTY, roles.STUDENT] 
+      allowedRoles: [roles.HOD, roles.FACULTY, roles.STUDENT] 
     },
     { 
       title: "Course Plans", 

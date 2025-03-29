@@ -410,7 +410,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/subjects", 
-    checkRole([roles.ADMIN, roles.HOD]), 
+    checkRole([roles.HOD]), 
     logActivity("created", "subject"),
     async (req, res) => {
       try {
@@ -428,7 +428,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.patch(
     "/api/subjects/:id", 
-    checkRole([roles.ADMIN, roles.HOD]), 
+    checkRole([roles.HOD]), 
     logActivity("updated", "subject"),
     async (req, res) => {
       const subjectId = parseInt(req.params.id);
@@ -498,7 +498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get(
     "/api/subject-assignments/subject/:subjectId", 
-    checkRole([roles.ADMIN, roles.HOD]), 
+    checkRole([roles.HOD]), 
     async (req, res) => {
       const subjectId = parseInt(req.params.subjectId);
       const assignments = await storage.getSubjectAssignmentsBySubject(subjectId);
@@ -517,7 +517,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post(
     "/api/subject-assignments", 
-    checkRole([roles.ADMIN, roles.HOD]), 
+    checkRole([roles.HOD]), 
     logActivity("created", "subject assignment"),
     async (req, res) => {
       try {
@@ -539,7 +539,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.delete(
     "/api/subject-assignments/:id", 
-    checkRole([roles.ADMIN, roles.HOD]), 
+    checkRole([roles.HOD]), 
     logActivity("deleted", "subject assignment"),
     async (req, res) => {
       const assignmentId = parseInt(req.params.id);

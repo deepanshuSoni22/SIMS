@@ -210,17 +210,7 @@ export default function AdminDashboard() {
               </div>
             </Link>
             
-            <Link to="/subjects" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
-              <div className="flex items-center">
-                <div className="bg-primary bg-opacity-10 p-2 rounded-full">
-                  <Users className="h-5 w-5 text-primary" />
-                </div>
-                <div className="ml-3">
-                  <h3 className="text-sm font-medium text-gray-800">Manage Subjects</h3>
-                  <p className="text-xs text-gray-500">View and add academic subjects</p>
-                </div>
-              </div>
-            </Link>
+
             
             <Link to="/reports" className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
@@ -306,9 +296,6 @@ export default function AdminDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Recently Updated Subjects</h2>
-            <Link to="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
-              View All
-            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="min-w-full divide-y divide-gray-200">
