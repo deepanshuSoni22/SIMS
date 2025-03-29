@@ -63,7 +63,7 @@ export default function SubjectPage() {
 
   // Fetch both faculty and HOD users for assignment
   const { data: teachingUsers } = useQuery<UserType[]>({
-    queryKey: [`/api/users/teaching`],
+    queryKey: ["/api/users/teaching"],
   });
   
   // Fetch subject assignments to display assigned faculty
