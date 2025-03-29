@@ -23,9 +23,11 @@ type AuthContextType = {
 
 type LoginData = Pick<InsertUser, "username" | "password">;
 
-// Create a registration schema with password confirmation
+// Create a registration schema with password confirmation and security questions
 const registerUserSchema = insertUserSchema.extend({
   confirmPassword: z.string(),
+  securityQuestion: z.string().min(5, "Security question must be at least 5 characters"),
+  securityAnswer: z.string().min(1, "Security answer is required"),
 }).refine(data => data.password === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],

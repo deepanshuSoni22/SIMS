@@ -1535,6 +1535,89 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
 
+  // Password Reset Routes
+  app.post("/api/request-password-reset", async (req, res) => {
+    try {
+      const { username } = req.body;
+      
+      if (!username) {
+        return res.status(400).json({ message: "Username is required" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if the user has a security question set
+      if (!user.securityQuestion) {
+        return res.status(400).json({
+          message: "This account doesn't have a security question set. Please contact an administrator."
+        });
+      }
+      
+      // Return the security question (but not the answer)
+      return res.status(200).json({
+        username: user.username,
+        securityQuestion: user.securityQuestion
+      });
+    } catch (error) {
+      console.error("Error in request-password-reset:", error);
+      return res.status(500).json({ message: "Server error while processing request" });
+    }
+  });
+  
+  app.post("/api/reset-password", async (req, res) => {
+    try {
+      const { username, securityAnswer, newPassword } = req.body;
+      
+      if (!username || !securityAnswer || !newPassword) {
+        return res.status(400).json({ message: "Username, security answer, and new password are required" });
+      }
+      
+      // Validate password
+      if (typeof newPassword !== 'string' || newPassword.length < 6) {
+        return res.status(400).json({ message: "Password must be at least 6 characters" });
+      }
+      
+      const user = await storage.getUserByUsername(username);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Verify security answer
+      if (!user.securityAnswer || user.securityAnswer !== securityAnswer) {
+        return res.status(403).json({ message: "Incorrect security answer" });
+      }
+      
+      // Hash the new password
+      const hashedPassword = await hashPassword(newPassword);
+      
+      // Update the user's password
+      const updatedUser = await storage.updateUser(user.id, { password: hashedPassword });
+      
+      if (!updatedUser) {
+        return res.status(500).json({ message: "Failed to update password" });
+      }
+      
+      // Log the activity
+      await storage.createActivityLog({
+        userId: user.id,
+        action: "reset-password",
+        entityType: "user",
+        entityId: user.id,
+        details: "Password reset via security question"
+      });
+      
+      return res.status(200).json({ message: "Password reset successful" });
+    } catch (error) {
+      console.error("Error in reset-password:", error);
+      return res.status(500).json({ message: "Server error while resetting password" });
+    }
+  });
+
   const httpServer = createServer(app);
   return httpServer;
 }

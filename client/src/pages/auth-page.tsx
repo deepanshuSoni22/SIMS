@@ -67,7 +67,7 @@ export default function AuthPage() {
     loginMutation.mutate(data, {
       onSuccess: () => {
         // Navigate to dashboard on successful login
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       }
     });
   };
@@ -82,6 +82,8 @@ export default function AuthPage() {
       confirmPassword: "",
       role: roles.STUDENT,
       departmentId: null,
+      securityQuestion: "",
+      securityAnswer: "",
     },
   });
 
@@ -94,7 +96,7 @@ export default function AuthPage() {
     registerMutation.mutate(data, {
       onSuccess: () => {
         // Navigate to dashboard on successful registration
-        window.location.href = '/dashboard';
+        navigate('/dashboard');
       }
     });
   };
@@ -157,7 +159,19 @@ export default function AuthPage() {
                       name="password"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Password</FormLabel>
+                          <div className="flex justify-between items-center">
+                            <FormLabel>Password</FormLabel>
+                            <Button 
+                              variant="link" 
+                              className="p-0 h-auto text-xs" 
+                              onClick={(e) => {
+                                e.preventDefault();
+                                navigate('/reset-password');
+                              }}
+                            >
+                              Forgot Password?
+                            </Button>
+                          </div>
                           <FormControl>
                             <Input type="password" placeholder="Enter your password" {...field} />
                           </FormControl>
@@ -226,6 +240,35 @@ export default function AuthPage() {
                           <FormLabel>Confirm Password</FormLabel>
                           <FormControl>
                             <Input type="password" placeholder="Confirm your password" {...field} />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="securityQuestion"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Security Question</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter a security question for password recovery" {...field} />
+                          </FormControl>
+                          <FormDescription>
+                            This will be used if you need to reset your password
+                          </FormDescription>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                    <FormField
+                      control={registerForm.control}
+                      name="securityAnswer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Security Answer</FormLabel>
+                          <FormControl>
+                            <Input placeholder="Enter the answer to your security question" {...field} />
                           </FormControl>
                           <FormMessage />
                         </FormItem>

@@ -14,6 +14,7 @@ import FacultyManagementPage from "@/pages/faculty-management-page";
 import ProfilePage from "@/pages/profile-page";
 import ActivityLogsPage from "@/pages/activity-logs-page";
 import SettingsPage from "@/pages/settings-page";
+import ResetPasswordPage from "./pages/reset-password-page";
 import { roles } from "@shared/schema";
 import { AuthProvider } from "./hooks/use-auth";
 
@@ -21,6 +22,7 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       <ProtectedRoute 
         path="/" 
         component={() => <DashboardPage />} 

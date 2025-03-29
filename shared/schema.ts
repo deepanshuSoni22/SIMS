@@ -18,6 +18,8 @@ export const users = pgTable("users", {
   password: text("password").notNull(),
   role: text("role", { enum: Object.values(roles) }).notNull(),
   departmentId: integer("department_id"),
+  securityQuestion: text("security_question"),
+  securityAnswer: text("security_answer"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -26,6 +28,8 @@ export const insertUserSchema = createInsertSchema(users).pick({
   password: true,
   role: true,
   departmentId: true,
+  securityQuestion: true,
+  securityAnswer: true,
 });
 
 // Department Schema
