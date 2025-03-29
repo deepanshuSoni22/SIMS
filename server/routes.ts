@@ -16,6 +16,7 @@ import {
   insertIndirectAssessmentSchema,
   insertStudentResponseSchema,
   insertAttainmentSchema,
+  insertNotificationSchema,
   roles
 } from "@shared/schema";
 import { z } from "zod";
@@ -1132,6 +1133,102 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const logs = await storage.getRecentActivityLogs(limit);
       res.json(logs);
+    }
+  );
+
+  // Notification Routes
+  app.get(
+    "/api/notifications",
+    async (req, res) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const notifications = await storage.getUserNotifications(req.user.id);
+      res.json(notifications);
+    }
+  );
+  
+  app.get(
+    "/api/notifications/unread",
+    async (req, res) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const notifications = await storage.getUnreadUserNotifications(req.user.id);
+      res.json(notifications);
+    }
+  );
+  
+  app.get(
+    "/api/notifications/unread/count",
+    async (req, res) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const count = await storage.getUnreadNotificationsCount(req.user.id);
+      res.json({ count });
+    }
+  );
+  
+  app.post(
+    "/api/notifications/read/:id",
+    async (req, res) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const notificationId = parseInt(req.params.id);
+      
+      if (isNaN(notificationId)) {
+        return res.status(400).json({ message: "Invalid notification ID" });
+      }
+      
+      const notification = await storage.getNotification(notificationId);
+      
+      if (!notification) {
+        return res.status(404).json({ message: "Notification not found" });
+      }
+      
+      // Ensure users can only mark their own notifications as read
+      if (notification.userId !== req.user.id) {
+        return res.status(403).json({ message: "Forbidden: Not your notification" });
+      }
+      
+      const updatedNotification = await storage.updateNotificationReadStatus(notificationId, true);
+      res.json(updatedNotification);
+    }
+  );
+  
+  app.post(
+    "/api/notifications/read-all",
+    async (req, res) => {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "Unauthorized" });
+      }
+      
+      const success = await storage.markAllNotificationsAsRead(req.user.id);
+      res.json({ success });
+    }
+  );
+  
+  app.post(
+    "/api/notifications",
+    checkRole([roles.ADMIN, roles.HOD]),
+    logActivity("created", "notification"),
+    async (req, res) => {
+      try {
+        const notificationData = insertNotificationSchema.parse(req.body);
+        const notification = await storage.createNotification(notificationData);
+        res.status(201).json(notification);
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return res.status(400).json({ message: "Invalid notification data", errors: error.errors });
+        }
+        throw error;
+      }
     }
   );
 

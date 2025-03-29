@@ -12,6 +12,7 @@ import {
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import soundaryaLogo from "../../assets/soundarya_logo.png";
 import { Link } from "wouter";
+import NotificationDropdown from "@/components/notifications/NotificationDropdown";
 
 interface HeaderProps {
   toggleSidebar: () => void;
@@ -62,6 +63,9 @@ export default function Header({ toggleSidebar, title }: HeaderProps) {
             <Button variant="ghost" size="icon" className="text-gray-600">
               <HelpCircle className="h-5 w-5" />
             </Button>
+          </div>
+          <div className="mx-3 relative">
+            <NotificationDropdown />
           </div>
           <div className="ml-3 relative hidden lg:block">
             <DropdownMenu>

@@ -12,13 +12,14 @@ import {
   indirectAssessments, type IndirectAssessment, type InsertIndirectAssessment,
   studentResponses, type StudentResponse, type InsertStudentResponse,
   attainments, type Attainment, type InsertAttainment,
-  activityLogs, type ActivityLog, type InsertActivityLog
+  activityLogs, type ActivityLog, type InsertActivityLog,
+  notifications, type Notification, type InsertNotification
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
 import connectPg from "connect-pg-simple";
 import { db } from "./db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, sql, desc } from "drizzle-orm";
 import { Pool } from '@neondatabase/serverless';
 
 const MemoryStore = createMemoryStore(session);
@@ -133,6 +134,15 @@ export interface IStorage {
   createActivityLog(log: InsertActivityLog): Promise<ActivityLog>;
   getRecentActivityLogs(limit: number): Promise<ActivityLog[]>;
   
+  // Notification Management
+  getNotification(id: number): Promise<Notification | undefined>;
+  createNotification(notification: InsertNotification): Promise<Notification>;
+  updateNotificationReadStatus(id: number, isRead: boolean): Promise<Notification | undefined>;
+  getUserNotifications(userId: number): Promise<Notification[]>;
+  getUnreadUserNotifications(userId: number): Promise<Notification[]>;
+  getUnreadNotificationsCount(userId: number): Promise<number>;
+  markAllNotificationsAsRead(userId: number): Promise<boolean>;
+  
   // Session Store
   sessionStore: session.SessionStore;
 }
@@ -152,6 +162,7 @@ export class MemStorage implements IStorage {
   private studentResponses: Map<number, StudentResponse>;
   private attainments: Map<number, Attainment>;
   private activityLogs: Map<number, ActivityLog>;
+  private notifications: Map<number, Notification>;
   
   private userIdCounter: number;
   private departmentIdCounter: number;
@@ -167,6 +178,7 @@ export class MemStorage implements IStorage {
   private studentResponseIdCounter: number;
   private attainmentIdCounter: number;
   private activityLogIdCounter: number;
+  private notificationIdCounter: number;
   
   sessionStore: session.SessionStore;
 
@@ -185,6 +197,7 @@ export class MemStorage implements IStorage {
     this.studentResponses = new Map();
     this.attainments = new Map();
     this.activityLogs = new Map();
+    this.notifications = new Map();
     
     this.userIdCounter = 1;
     this.departmentIdCounter = 1;
@@ -200,6 +213,7 @@ export class MemStorage implements IStorage {
     this.studentResponseIdCounter = 1;
     this.attainmentIdCounter = 1;
     this.activityLogIdCounter = 1;
+    this.notificationIdCounter = 1;
     
     this.sessionStore = new MemoryStore({
       checkPeriod: 86400000, // prune expired entries every 24h
@@ -667,6 +681,68 @@ export class MemStorage implements IStorage {
     return Array.from(this.activityLogs.values())
       .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime())
       .slice(0, limit);
+  }
+
+  // Notification Management
+  async getNotification(id: number): Promise<Notification | undefined> {
+    return this.notifications.get(id);
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const id = this.notificationIdCounter++;
+    const now = new Date();
+    const notification: Notification = {
+      ...insertNotification,
+      id,
+      isRead: false,
+      createdAt: now,
+      // Ensure these are not undefined for the type system
+      entityId: insertNotification.entityId ?? null,
+      entityType: insertNotification.entityType ?? null
+    };
+    this.notifications.set(id, notification);
+    return notification;
+  }
+
+  async updateNotificationReadStatus(id: number, isRead: boolean): Promise<Notification | undefined> {
+    const notification = this.notifications.get(id);
+    if (!notification) return undefined;
+
+    const updatedNotification: Notification = {
+      ...notification,
+      isRead
+    };
+    this.notifications.set(id, updatedNotification);
+    return updatedNotification;
+  }
+
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    return Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getUnreadUserNotifications(userId: number): Promise<Notification[]> {
+    return Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId && !notification.isRead)
+      .sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    return Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId && !notification.isRead)
+      .length;
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+    let updated = false;
+    Array.from(this.notifications.values())
+      .filter(notification => notification.userId === userId && !notification.isRead)
+      .forEach(notification => {
+        this.notifications.set(notification.id, { ...notification, isRead: true });
+        updated = true;
+      });
+    return updated;
   }
 }
 
@@ -1138,6 +1214,73 @@ export class DatabaseStorage implements IStorage {
       .from(activityLogs)
       .orderBy(activityLogs.createdAt)
       .limit(limit);
+  }
+
+  // Notification Management
+  async getNotification(id: number): Promise<Notification | undefined> {
+    const [notification] = await db.select()
+      .from(notifications)
+      .where(eq(notifications.id, id));
+    return notification || undefined;
+  }
+
+  async createNotification(insertNotification: InsertNotification): Promise<Notification> {
+    const [notification] = await db.insert(notifications)
+      .values({
+        ...insertNotification,
+        isRead: false,
+        createdAt: new Date(),
+        // Ensure these are not undefined for the type system
+        entityId: insertNotification.entityId ?? null,
+        entityType: insertNotification.entityType ?? null
+      })
+      .returning();
+    return notification;
+  }
+
+  async updateNotificationReadStatus(id: number, isRead: boolean): Promise<Notification | undefined> {
+    const [notification] = await db.update(notifications)
+      .set({ isRead })
+      .where(eq(notifications.id, id))
+      .returning();
+    return notification || undefined;
+  }
+
+  async getUserNotifications(userId: number): Promise<Notification[]> {
+    return await db.select()
+      .from(notifications)
+      .where(eq(notifications.userId, userId))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async getUnreadUserNotifications(userId: number): Promise<Notification[]> {
+    return await db.select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ))
+      .orderBy(desc(notifications.createdAt));
+  }
+
+  async getUnreadNotificationsCount(userId: number): Promise<number> {
+    const notificationsList = await db.select()
+      .from(notifications)
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+    return notificationsList.length;
+  }
+
+  async markAllNotificationsAsRead(userId: number): Promise<boolean> {
+    const result = await db.update(notifications)
+      .set({ isRead: true })
+      .where(and(
+        eq(notifications.userId, userId),
+        eq(notifications.isRead, false)
+      ));
+    return (result.rowCount ?? 0) > 0;
   }
 }
 
