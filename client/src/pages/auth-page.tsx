@@ -65,7 +65,7 @@ export default function AuthPage() {
 
   const handleLoginSubmit = (data: LoginFormValues) => {
     loginMutation.mutate(data, {
-      onSuccess: () => {
+      onSuccess: async () => {
         // Navigate to dashboard on successful login
         navigate('/dashboard');
       }
