@@ -154,16 +154,11 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                         "material-icons mr-3",
                         isActive 
                           ? "text-primary" 
-                          : item.title === "Dashboard"
-                          ? "text-primary"
                           : "text-gray-600"
                       )}>
                         {item.icon}
                       </span>
-                      <span className={cn(
-                        "font-medium",
-                        item.title === "Dashboard" && !isActive && "text-gray-700"
-                      )}>
+                      <span className="font-medium">
                         {item.title}
                       </span>
                     </div>
