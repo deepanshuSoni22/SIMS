@@ -144,10 +144,10 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
                   >
                     <div 
                       className={cn(
-                        "flex items-center px-3 py-2.5 text-sm font-medium rounded-md cursor-pointer",
+                        "flex items-center py-2.5 text-sm font-medium cursor-pointer",
                         isActive 
-                          ? "bg-primary bg-opacity-5 text-primary" 
-                          : "text-gray-700 hover:bg-gray-100"
+                          ? "border-l-4 border-primary text-primary bg-gray-50 pl-2" 
+                          : "text-gray-700 hover:bg-gray-100 px-3"
                       )}
                     >
                       <span className={cn(
