@@ -1,5 +1,5 @@
 import { useAuth } from "@/hooks/use-auth";
-import { Bell, HelpCircle, Menu, User, LogOut } from "lucide-react";
+import { HelpCircle, Menu, User, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -10,7 +10,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Badge } from "@/components/ui/badge";
 import soundaryaLogo from "../../assets/soundarya_logo.png";
 import { Link } from "wouter";
 
@@ -59,15 +58,6 @@ export default function Header({ toggleSidebar, title }: HeaderProps) {
           </div>
         </div>
         <div className="flex items-center">
-          <div className="relative">
-            <Button variant="ghost" size="icon" className="text-gray-600 mx-3">
-              <Bell className="h-5 w-5" />
-              <Badge 
-                variant="destructive" 
-                className="h-2 w-2 p-0 absolute top-0 right-0" 
-              />
-            </Button>
-          </div>
           <div className="mx-3 relative">
             <Button variant="ghost" size="icon" className="text-gray-600">
               <HelpCircle className="h-5 w-5" />
