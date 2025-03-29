@@ -174,6 +174,7 @@ export default function UserManagementPage() {
       confirmPassword: "",
       role: roles.STUDENT,
       departmentId: null,
+      whatsappNumber: "",
     },
   });
   
@@ -183,6 +184,7 @@ export default function UserManagementPage() {
     username: z.string().min(2, "Username must be at least 2 characters"),
     role: z.string(),
     departmentId: z.number().nullable(),
+    whatsappNumber: z.string().optional(),
     password: z.string().optional(),
     confirmPassword: z.string().optional(),
   }).refine(data => {
@@ -204,6 +206,7 @@ export default function UserManagementPage() {
       username: "",
       role: roles.STUDENT,
       departmentId: null,
+      whatsappNumber: "",
       password: "",
       confirmPassword: "",
     },
@@ -482,6 +485,7 @@ export default function UserManagementPage() {
                                   username: user.username,
                                   role: user.role,
                                   departmentId: user.departmentId,
+                                  whatsappNumber: user.whatsappNumber || "",
                                   password: "",
                                   confirmPassword: "",
                                 });
@@ -659,6 +663,23 @@ export default function UserManagementPage() {
                   )}
                 />
                 
+                <FormField
+                  control={form.control}
+                  name="whatsappNumber"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>WhatsApp Number</FormLabel>
+                      <FormControl>
+                        <Input placeholder="+91 9876543210" {...field} value={field.value || ""} />
+                      </FormControl>
+                      <FormDescription>
+                        WhatsApp number with country code (optional)
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
                 {/* Only show department selection for faculty and students */}
                 {(selectedUserRole === roles.FACULTY || selectedUserRole === roles.STUDENT) && (
                   <FormField
@@ -780,6 +801,23 @@ export default function UserManagementPage() {
                         <SelectItem value={roles.STUDENT}>Student</SelectItem>
                       </SelectContent>
                     </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={editUserForm.control}
+                name="whatsappNumber"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>WhatsApp Number</FormLabel>
+                    <FormControl>
+                      <Input placeholder="+91 9876543210" {...field} value={field.value || ""} />
+                    </FormControl>
+                    <FormDescription>
+                      WhatsApp number with country code (optional)
+                    </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}

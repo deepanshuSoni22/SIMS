@@ -221,9 +221,10 @@ export function setupAuth(app: Express) {
       const userId = req.user.id;
       const updates = req.body;
       
-      // Only allow updating name and possibly password
+      // Only allow updating name, whatsappNumber, and possibly password
       const allowedUpdates: Record<string, any> = {};
       if (updates.name) allowedUpdates.name = updates.name;
+      if (updates.whatsappNumber !== undefined) allowedUpdates.whatsappNumber = updates.whatsappNumber;
       
       // Handle password update separately to hash it
       if (updates.password) {

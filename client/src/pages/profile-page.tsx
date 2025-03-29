@@ -6,7 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Save, User, Lock, Shield, School, Building2 } from "lucide-react";
+import { Loader2, Save, User, Lock, Shield, School, Building2, MessageSquare } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 
 import {
@@ -36,6 +36,11 @@ import { Separator } from "@/components/ui/separator";
 // Define the schema for profile information updates
 const profileSchema = z.object({
   name: z.string().min(3, "Name must be at least 3 characters"),
+  whatsappNumber: z
+    .string()
+    .regex(/^\+?[0-9]{10,15}$/, "Please enter a valid WhatsApp number (10-15 digits)")
+    .optional()
+    .or(z.literal("")),
 });
 
 // Define the schema for password changes
@@ -86,6 +91,7 @@ export default function ProfilePage() {
     resolver: zodResolver(profileSchema),
     defaultValues: {
       name: user?.name || "",
+      whatsappNumber: user?.whatsappNumber || "",
     },
   });
 
@@ -194,6 +200,16 @@ export default function ProfilePage() {
                   <span className="text-sm font-medium text-primary">{getRoleIcon(user.role)}</span>
                 </div>
               </div>
+              
+              {user.whatsappNumber && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-sm text-muted-foreground">WhatsApp</span>
+                  <div className="flex items-center gap-2">
+                    <span className="font-medium">{user.whatsappNumber}</span>
+                    <MessageSquare className="h-4 w-4 text-green-500" />
+                  </div>
+                </div>
+              )}
 
               {user.departmentId && (
                 <div className="flex flex-col gap-1">
@@ -250,6 +266,23 @@ export default function ProfilePage() {
                             </FormControl>
                             <FormDescription>
                               This is your display name throughout the system
+                            </FormDescription>
+                            <FormMessage />
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={profileForm.control}
+                        name="whatsappNumber"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>WhatsApp Number</FormLabel>
+                            <FormControl>
+                              <Input placeholder="+1234567890" {...field} />
+                            </FormControl>
+                            <FormDescription>
+                              Your WhatsApp number for notifications (optional)
                             </FormDescription>
                             <FormMessage />
                           </FormItem>

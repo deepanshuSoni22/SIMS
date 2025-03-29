@@ -20,6 +20,7 @@ export const users = pgTable("users", {
   departmentId: integer("department_id"),
   securityQuestion: text("security_question"),
   securityAnswer: text("security_answer"),
+  whatsappNumber: text("whatsapp_number"),
 });
 
 export const insertUserSchema = createInsertSchema(users).pick({
@@ -30,6 +31,7 @@ export const insertUserSchema = createInsertSchema(users).pick({
   departmentId: true,
   securityQuestion: true,
   securityAnswer: true,
+  whatsappNumber: true,
 });
 
 // Department Schema
