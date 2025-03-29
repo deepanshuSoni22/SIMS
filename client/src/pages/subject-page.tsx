@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { useAuth, roles } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 import { Department, Subject, User as UserType, SubjectAssignment, insertSubjectSchema, insertSubjectAssignmentSchema } from "@shared/schema";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -29,7 +30,6 @@ import {
   Table, TableBody, TableCell, TableHead, TableHeader, TableRow 
 } from "@/components/ui/table";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useToast } from "@/hooks/use-toast";
 
 type CreateSubjectFormValues = z.infer<typeof insertSubjectSchema>;
 type AssignSubjectFormValues = z.infer<typeof insertSubjectAssignmentSchema>;
@@ -286,6 +286,15 @@ export default function SubjectPage() {
           <h1 className="text-2xl font-bold text-gray-900">Subjects</h1>
           <p className="text-gray-500">Manage academic subjects and assignments</p>
         </div>
+        {canCreateSubject && (
+          <Button 
+            onClick={() => setIsAddSubjectDialogOpen(true)}
+            className="flex items-center gap-2"
+          >
+            <Plus className="h-4 w-4" />
+            Add Subject
+          </Button>
+        )}
       </div>
 
       <Card>
