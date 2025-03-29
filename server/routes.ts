@@ -24,6 +24,14 @@ import {
 import { generateOtp, sendOtpWhatsApp, verifyOtp } from "./whatsapp-service";
 import { z } from "zod";
 
+// Middleware to check if user is authenticated
+const isAuthenticated = (req: Request, res: Response, next: NextFunction) => {
+  if (!req.isAuthenticated()) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  next();
+};
+
 // Middleware for role-based access control
 const checkRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -535,6 +543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Add endpoint for teaching users (Faculty + HOD)
   app.get(
     "/api/users/teaching", 
+    isAuthenticated, // Use the isAuthenticated middleware
     async (req, res) => {
       try {
         // Get both faculty and HOD users for subject assignments
@@ -572,6 +581,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subject Assignment Routes
   app.get(
     "/api/subject-assignments", 
+    isAuthenticated, // Use the isAuthenticated middleware
     async (req, res) => {
       const assignments = await storage.getAllSubjectAssignments();
       res.json(assignments);
@@ -590,6 +600,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get(
     "/api/subject-assignments/faculty/:facultyId", 
+    isAuthenticated, // Add authentication middleware
     async (req, res) => {
       const facultyId = parseInt(req.params.facultyId);
       const assignments = await storage.getSubjectAssignmentsByFaculty(facultyId);
