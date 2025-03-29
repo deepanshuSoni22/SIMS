@@ -153,6 +153,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Password updates not supported through this endpoint" });
       }
       
+      // Handle whatsappNumber specifically - it can be null, empty string, or a value
+      if (updateData.whatsappNumber !== undefined) {
+        console.log("Admin/HOD updating whatsappNumber:", JSON.stringify(updateData.whatsappNumber));
+        // Convert empty string to null for the database
+        updateData.whatsappNumber = updateData.whatsappNumber === "" ? null : updateData.whatsappNumber;
+      }
+      
       const updatedUser = await storage.updateUser(userId, updateData);
       
       if (!updatedUser) {

@@ -128,8 +128,15 @@ export function setupAuth(app: Express) {
 
       // Hash password and create user
       const hashedPassword = await hashPassword(req.body.password);
+      
+      // Clean up whatsappNumber (convert empty string to null)
+      const sanitizedWhatsappNumber = 
+        req.body.whatsappNumber === "" ? null : req.body.whatsappNumber;
+      
+      // Create sanitized user object
       const userToCreate = {
         ...req.body,
+        whatsappNumber: sanitizedWhatsappNumber,
         password: hashedPassword,
       };
 
@@ -224,7 +231,13 @@ export function setupAuth(app: Express) {
       // Only allow updating name, whatsappNumber, and possibly password
       const allowedUpdates: Record<string, any> = {};
       if (updates.name) allowedUpdates.name = updates.name;
-      if (updates.whatsappNumber !== undefined) allowedUpdates.whatsappNumber = updates.whatsappNumber;
+      
+      // Handle whatsappNumber specifically - it can be null, empty string, or a value
+      if (updates.whatsappNumber !== undefined) {
+        console.log("WhatsApp number update:", JSON.stringify(updates.whatsappNumber));
+        // Convert empty string to null for the database
+        allowedUpdates.whatsappNumber = updates.whatsappNumber === "" ? null : updates.whatsappNumber;
+      }
       
       // Handle password update separately to hash it
       if (updates.password) {

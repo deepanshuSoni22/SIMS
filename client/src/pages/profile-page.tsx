@@ -279,7 +279,7 @@ export default function ProfilePage() {
                           <FormItem>
                             <FormLabel>WhatsApp Number</FormLabel>
                             <FormControl>
-                              <Input placeholder="+1234567890" {...field} />
+                              <Input placeholder="+1234567890" {...field} value={field.value || ""} />
                             </FormControl>
                             <FormDescription>
                               Your WhatsApp number for notifications (optional)
