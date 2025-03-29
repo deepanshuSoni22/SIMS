@@ -55,6 +55,8 @@ export default function UserManagementPage() {
   // Fetch all users
   const { data: users, isLoading, refetch } = useQuery<User[]>({
     queryKey: ["/api/users"],
+    refetchOnWindowFocus: false,
+    staleTime: 10000, // 10 seconds
   });
 
   // Fetch departments for department selection
@@ -376,8 +378,17 @@ export default function UserManagementPage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                 />
               </div>
-              <Button variant="outline" size="icon" onClick={() => refetch()}>
-                <RefreshCw className="h-4 w-4" />
+              <Button 
+                variant="outline" 
+                size="icon" 
+                onClick={() => {
+                  // Force refetch both users and departments queries
+                  queryClient.invalidateQueries({ queryKey: ["/api/users"] });
+                  queryClient.invalidateQueries({ queryKey: ["/api/departments"] });
+                  refetch();
+                }}
+              >
+                <RefreshCw className={`h-4 w-4 ${isLoading ? 'animate-spin' : ''}`} />
               </Button>
             </div>
           </div>
