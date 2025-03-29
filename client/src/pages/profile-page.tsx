@@ -4,9 +4,9 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
-import { Loader2, Save, User, Lock, Shield, School } from "lucide-react";
+import { Loader2, Save, User, Lock, Shield, School, Building2 } from "lucide-react";
 import AppLayout from "@/components/layout/AppLayout";
 
 import {
@@ -74,6 +74,12 @@ export default function ProfilePage() {
   const { user } = useAuth();
   const { toast } = useToast();
   const [activeTab, setActiveTab] = useState<string>("profile");
+  
+  // Fetch departments to display department name
+  const { data: departments = [] } = useQuery<any[]>({
+    queryKey: ["/api/departments"],
+    enabled: !!user?.departmentId,
+  });
 
   // Profile update form
   const profileForm = useForm<ProfileFormValues>({
@@ -192,7 +198,12 @@ export default function ProfilePage() {
               {user.departmentId && (
                 <div className="flex flex-col gap-1">
                   <span className="text-sm text-muted-foreground">Department</span>
-                  <Badge>Department ID: {user.departmentId}</Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge>
+                      {departments.find((d: any) => d.id === user.departmentId)?.name || `Department ${user.departmentId}`}
+                    </Badge>
+                    <Building2 className="h-4 w-4 text-primary" />
+                  </div>
                 </div>
               )}
               
@@ -343,14 +354,7 @@ export default function ProfilePage() {
                 </TabsContent>
               </Tabs>
             </CardContent>
-            <CardFooter className="flex justify-between">
-              <Button variant="outline" onClick={() => setActiveTab("profile")}>
-                Profile Info
-              </Button>
-              <Button variant="outline" onClick={() => setActiveTab("password")}>
-                Password
-              </Button>
-            </CardFooter>
+            {/* Footer content removed as requested */}
           </Card>
         </div>
       </div>
