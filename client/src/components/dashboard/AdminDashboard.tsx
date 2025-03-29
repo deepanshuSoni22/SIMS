@@ -145,11 +145,17 @@ export default function AdminDashboard() {
                         <div className="flex items-center">
                           <Avatar className="h-8 w-8 rounded-full bg-gray-200">
                             <AvatarFallback className="text-gray-600 text-sm">
-                              {log.userId.toString().charAt(0)}
+                              {/* Find the user by ID and show their initial or fallback to user ID */}
+                              {users?.find(user => user.id === log.userId)?.name?.charAt(0) || log.userId.toString().charAt(0)}
                             </AvatarFallback>
                           </Avatar>
                           <div className="ml-4">
-                            <div className="text-sm font-medium text-gray-900">User ID: {log.userId}</div>
+                            <div className="text-sm font-medium text-gray-900">
+                              {users?.find(user => user.id === log.userId)?.name || `User ${log.userId}`}
+                            </div>
+                            <div className="text-xs text-gray-500">
+                              {users?.find(user => user.id === log.userId)?.username || ''}
+                            </div>
                           </div>
                         </div>
                       </td>
@@ -261,7 +267,11 @@ export default function AdminDashboard() {
                   <div className="flex justify-between items-start">
                     <div>
                       <h3 className="font-medium text-gray-800">{dept.name}</h3>
-                      <p className="text-sm text-gray-500">HOD: {dept.hodId ? `ID: ${dept.hodId}` : 'Not Assigned'}</p>
+                      <p className="text-sm text-gray-500">
+                        HOD: {dept.hodId 
+                          ? (users?.find(user => user.id === dept.hodId)?.name || `User ${dept.hodId}`) 
+                          : 'Not Assigned'}
+                      </p>
                       <div className="mt-2 flex items-center text-sm">
                         <span className="material-icons text-gray-400 text-xs mr-1">people</span>
                         <span className="text-gray-600">{
