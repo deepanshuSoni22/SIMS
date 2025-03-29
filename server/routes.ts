@@ -458,27 +458,51 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
   
-  // Add endpoint for teaching users (Faculty + HOD)
+  // Add endpoint for teaching users (Faculty + HOD) using a direct query
   app.get(
     "/api/users/teaching",
     requireAuth, // Add authentication middleware
     async (req, res) => {
       try {
+        console.log("Teaching users endpoint called by user:", req.user?.id, req.user?.username);
+        
         if (!req.user) {
+          console.log("No authenticated user found");
           return res.status(401).json({ message: "Not authenticated" });
         }
         
-        // Get both faculty and HOD users for subject assignments
-        const facultyUsers = await storage.getUsersByRole(roles.FACULTY);
-        const hodUsers = await storage.getUsersByRole(roles.HOD);
+        // Get all users directly and filter by roles in JavaScript
+        console.log("Fetching all users from storage");
+        const allUsers = await storage.getAllUsers();
         
-        if (!facultyUsers || !hodUsers) {
-          return res.status(500).json({ message: "Failed to fetch teaching users" });
+        if (!allUsers) {
+          console.log("Failed to fetch users - null value returned");
+          return res.status(500).json({ message: "Failed to fetch users" });
         }
         
-        // Debug log to check the data format
-        console.log("Faculty users retrieved:", facultyUsers);
-        console.log("HOD users retrieved:", hodUsers);
+        console.log("Total users fetched:", allUsers.length);
+        
+        // Filter users by role
+        const facultyUsers = allUsers.filter(user => user.role === roles.FACULTY);
+        const hodUsers = allUsers.filter(user => user.role === roles.HOD);
+        
+        // Detailed debug logging
+        console.log("Faculty users count:", facultyUsers.length);
+        console.log("Faculty user IDs:", facultyUsers.map(u => u.id));
+        console.log("HOD users count:", hodUsers.length);
+        console.log("HOD user IDs:", hodUsers.map(u => u.id));
+        
+        // Log each faculty user's details to debug issues with missing data
+        console.log("Faculty users detailed:")
+        facultyUsers.forEach(user => {
+          console.log(`ID: ${user.id}, Name: ${user.name || 'MISSING'}, Username: ${user.username}, Role: ${user.role}`);
+        });
+        
+        // Log each HOD user's details to debug issues with missing data
+        console.log("HOD users detailed:")
+        hodUsers.forEach(user => {
+          console.log(`ID: ${user.id}, Name: ${user.name || 'MISSING'}, Username: ${user.username}, Role: ${user.role}`);
+        });
         
         // Explicitly cast users to avoid issues with password property
         const sanitizedFacultyUsers = facultyUsers.map(user => ({
@@ -500,7 +524,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Combine the sanitized users
         const teachingUsers = [...sanitizedFacultyUsers, ...sanitizedHodUsers];
         
-        console.log("Teaching users being sent:", teachingUsers);
+        console.log("Final teaching users to be sent:", teachingUsers.length);
+        console.log("Final teaching user IDs:", teachingUsers.map(u => u.id).join(', '));
+        
+        // Set cache control headers to prevent caching
+        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         res.json(teachingUsers);
       } catch (error) {
         console.error("Error fetching teaching users:", error);
