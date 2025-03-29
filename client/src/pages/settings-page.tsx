@@ -2,19 +2,38 @@ import React, { useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useCollegeTitle } from "@/hooks/use-college-title";
 import AppLayout from "@/components/layout/AppLayout";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Label } from "@/components/ui/label";
-import { Loader2, Upload } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Loader2, Upload, Type } from "lucide-react";
 
 export default function SettingsPage() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [logoUrl, setLogoUrl] = useState("");
   const [loading, setLoading] = useState(false);
+  
+  // Use college title hook
+  const { 
+    collegeTitle, 
+    instituteName, 
+    systemName, 
+    updateTitle, 
+    isUpdating,
+    isLoading: isTitleLoading
+  } = useCollegeTitle();
+  
+  // College title state
+  const [titleForm, setTitleForm] = useState({
+    collegeTitle: "",
+    instituteName: "",
+    systemName: ""
+  });
 
   // Fetch logo URL
   const { data: logoData, isLoading: isLogoLoading } = useQuery({
@@ -31,6 +50,17 @@ export default function SettingsPage() {
       setLogoUrl(logoData.logoUrl);
     }
   }, [logoData]);
+  
+  // Set the college title form data when college title data is loaded
+  React.useEffect(() => {
+    if (collegeTitle && instituteName && systemName) {
+      setTitleForm({
+        collegeTitle,
+        instituteName,
+        systemName
+      });
+    }
+  }, [collegeTitle, instituteName, systemName]);
 
   // Fetch all system settings
   const { data: settings, isLoading: isSettingsLoading } = useQuery({
@@ -169,6 +199,29 @@ export default function SettingsPage() {
       handleUpdateLogo();
     }
   };
+  
+  const handleTitleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+    setTitleForm(prev => ({
+      ...prev,
+      [name]: value
+    }));
+  };
+  
+  const handleUpdateTitle = () => {
+    const { collegeTitle: title, instituteName, systemName } = titleForm;
+    
+    if (!title || !instituteName || !systemName) {
+      toast({
+        title: "All fields are required",
+        description: "Please fill in all the title fields.",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    updateTitle(titleForm);
+  };
 
   return (
     <AppLayout title="System Settings">
@@ -252,6 +305,92 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 )}
+                
+                <Separator className="my-6" />
+                
+                <div className="space-y-4">
+                  <div>
+                    <h3 className="text-lg font-medium">College Title Settings</h3>
+                    <p className="text-sm text-muted-foreground">
+                      Customize how your institution's name appears throughout the application.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="collegeTitle">College Title</Label>
+                      <Input
+                        id="collegeTitle"
+                        name="collegeTitle"
+                        value={titleForm.collegeTitle}
+                        onChange={handleTitleInputChange}
+                        placeholder="e.g., Soundarya Institute"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The main title of your college that appears in the header and login page.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="instituteName">Institute Name</Label>
+                      <Input
+                        id="instituteName"
+                        name="instituteName"
+                        value={titleForm.instituteName}
+                        onChange={handleTitleInputChange}
+                        placeholder="e.g., of Management and Science"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The secondary part of your institution's name.
+                      </p>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <Label htmlFor="systemName">System Name</Label>
+                      <Input
+                        id="systemName"
+                        name="systemName"
+                        value={titleForm.systemName}
+                        onChange={handleTitleInputChange}
+                        placeholder="e.g., COPO Management System"
+                      />
+                      <p className="text-xs text-muted-foreground">
+                        The name of this system or application.
+                      </p>
+                    </div>
+                    
+                    <div className="pt-2">
+                      <Button 
+                        onClick={handleUpdateTitle}
+                        disabled={isUpdating}
+                      >
+                        {isUpdating ? (
+                          <>
+                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                            Updating...
+                          </>
+                        ) : (
+                          <>
+                            <Type className="mr-2 h-4 w-4" />
+                            Update Title
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-4 p-4 border rounded-md">
+                    <Label className="block mb-2">Title Preview</Label>
+                    <div className="bg-gray-50 p-4 rounded-md">
+                      <p className="text-center font-semibold">
+                        {titleForm.collegeTitle} {titleForm.instituteName}
+                      </p>
+                      <p className="text-center text-sm text-muted-foreground">
+                        {titleForm.systemName}
+                      </p>
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
