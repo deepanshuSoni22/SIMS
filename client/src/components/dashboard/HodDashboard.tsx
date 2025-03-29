@@ -138,7 +138,7 @@ export default function HodDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Faculty Members</h2>
-            <Link to="/users" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            <Link to={`/users?role=faculty&departmentId=${user?.departmentId}`} className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
               View All
             </Link>
           </div>
@@ -205,7 +205,7 @@ export default function HodDashboard() {
         <div className="bg-white rounded-lg shadow overflow-hidden">
           <div className="p-4 border-b flex justify-between items-center">
             <h2 className="text-lg font-medium text-gray-800">Department Subjects</h2>
-            <Link to="/subjects" className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
+            <Link to={`/subjects?departmentId=${user?.departmentId}`} className="text-primary hover:text-blue-700 focus:outline-none text-sm font-medium">
               View All
             </Link>
           </div>
@@ -276,8 +276,8 @@ export default function HodDashboard() {
           </div>
           <div className="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
             <Link to={subjects && subjects.length > 0 
-                  ? `/subjects?action=assign&subjectId=${subjects[0].id}` 
-                  : "/subjects"} 
+                  ? `/subjects?action=assign&subjectId=${subjects[0].id}&departmentId=${user?.departmentId}` 
+                  : `/subjects?departmentId=${user?.departmentId}`} 
               className="block p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition duration-150">
               <div className="flex items-center">
                 <div className="bg-primary bg-opacity-10 p-2 rounded-full">
