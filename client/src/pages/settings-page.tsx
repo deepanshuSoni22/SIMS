@@ -83,42 +83,65 @@ export default function SettingsPage() {
   };
 
   const isValidImageUrl = (url: string) => {
-    return url.match(/\.(jpeg|jpg|gif|png|svg)$/i) !== null;
+    // Check if it's a valid URL first
+    try {
+      new URL(url);
+      // If we don't want to restrict by extension, we can just return true
+      // and let the testImageUrl function do the verification by content-type
+      return true;
+    } catch (e) {
+      return false;
+    }
   };
 
   const testImageUrl = async (url: string) => {
     setLoading(true);
+    
+    // Try a simple approach first - create an Image object and see if it loads
     try {
-      const res = await fetch(url, { method: 'HEAD' });
-      if (!res.ok) {
-        toast({
-          title: "Invalid image URL",
-          description: "The URL does not point to a valid image. Please check and try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      const contentType = res.headers.get('content-type');
-      if (!contentType || !contentType.startsWith('image/')) {
-        toast({
-          title: "Invalid image URL",
-          description: "The URL does not point to an image. Please check and try again.",
-          variant: "destructive",
-        });
-        return false;
-      }
-      
-      return true;
+      // Return a promise that resolves when the image loads or rejects on error
+      return await new Promise((resolve) => {
+        const img = new Image();
+        
+        img.onload = () => {
+          setLoading(false);
+          resolve(true);
+        };
+        
+        img.onerror = () => {
+          setLoading(false);
+          toast({
+            title: "Invalid image URL",
+            description: "We couldn't load this image. Please check the URL and try again.",
+            variant: "destructive",
+          });
+          resolve(false);
+        };
+        
+        // Set the source to trigger loading
+        img.src = url;
+        
+        // Set a timeout in case the image takes too long to load
+        setTimeout(() => {
+          if (img.complete) return;
+          img.src = "";
+          setLoading(false);
+          toast({
+            title: "Image load timeout",
+            description: "The image is taking too long to load. Please check the URL and try again.",
+            variant: "destructive",
+          });
+          resolve(false);
+        }, 10000); // 10 second timeout
+      });
     } catch (error) {
+      setLoading(false);
       toast({
         title: "Error checking image URL",
-        description: "Could not validate the image URL. Please check your internet connection.",
+        description: "Could not validate the image URL. Please try a different URL.",
         variant: "destructive",
       });
       return false;
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -134,8 +157,8 @@ export default function SettingsPage() {
 
     if (!isValidImageUrl(logoUrl)) {
       toast({
-        title: "Invalid image format",
-        description: "The URL should point to an image file (jpg, png, gif, svg).",
+        title: "Invalid URL format",
+        description: "Please enter a valid URL (e.g., https://example.com/logo.png)",
         variant: "destructive",
       });
       return;
@@ -209,7 +232,8 @@ export default function SettingsPage() {
                     </Button>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Enter the URL of your college logo. Recommended size: 200x200 pixels. Supported formats: JPG, PNG, GIF, SVG.
+                    Enter the URL of your college logo. Recommended size: 200x200 pixels. The URL should point to an image hosted online. 
+                    We'll verify if it's a valid image before saving.
                   </p>
                 </div>
 
