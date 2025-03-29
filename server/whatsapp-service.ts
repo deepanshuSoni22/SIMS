@@ -56,7 +56,7 @@ export async function initializeWhatsAppClient(): Promise<void> {
 
 // Generate an OTP for a user
 export function generateOtp(userId: number): string {
-  const otp = otpGenerator(6, { 
+  const otp = otpGenerator.generate(6, { 
     digits: true, 
     upperCaseAlphabets: false, 
     lowerCaseAlphabets: false,
