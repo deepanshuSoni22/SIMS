@@ -142,6 +142,42 @@ export default function SubjectPage() {
       });
     },
   });
+  
+  // Remove subject assignment mutation
+  const removeAssignmentMutation = useMutation({
+    mutationFn: async (assignmentId: number) => {
+      const res = await apiRequest("DELETE", `/api/subject-assignments/${assignmentId}`);
+      return assignmentId; // Return the ID for reference in onSuccess
+    },
+    onSuccess: (assignmentId) => {
+      // Get assignment details for success message
+      const assignment = subjectAssignments?.find(a => a.id === assignmentId);
+      if (assignment) {
+        const faculty = teachingUsers?.find(f => f.id === assignment.facultyId);
+        const subject = subjects?.find(s => s.id === assignment.subjectId);
+        
+        toast({
+          title: "Faculty removed successfully",
+          description: `${faculty?.name} has been removed from ${subject?.name}.`,
+        });
+      } else {
+        toast({
+          title: "Faculty removed successfully",
+          description: "The faculty member has been removed from the subject.",
+        });
+      }
+      
+      // Update local state
+      queryClient.invalidateQueries({ queryKey: ["/api/subject-assignments"] });
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Failed to remove faculty",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
 
   // Create subject form
   const subjectForm = useForm<CreateSubjectFormValues>({
@@ -265,6 +301,13 @@ export default function SubjectPage() {
   const handleViewFacultyClick = (subject: Subject) => {
     setSelectedSubject(subject);
     setIsViewFacultyDialogOpen(true);
+  };
+  
+  const handleRemoveAssignment = (assignmentId: number) => {
+    if (!confirm("Are you sure you want to remove this faculty from the subject?")) {
+      return;
+    }
+    removeAssignmentMutation.mutate(assignmentId);
   };
 
   const getStatusBadge = (status: string) => {
@@ -795,14 +838,25 @@ export default function SubjectPage() {
                       .map(assignment => {
                         const faculty = teachingUsers?.find(f => f.id === assignment.facultyId);
                         return (
-                          <div key={assignment.id} className="flex items-center gap-3 p-3 rounded-md border">
-                            <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
-                              <User className="h-5 w-5 text-primary" />
+                          <div key={assignment.id} className="flex items-center justify-between gap-3 p-3 rounded-md border">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                                <User className="h-5 w-5 text-primary" />
+                              </div>
+                              <div>
+                                <p className="font-medium">{faculty?.name || 'Unknown Faculty'}</p>
+                                <p className="text-sm text-gray-500">{faculty?.username || 'No username'}</p>
+                              </div>
                             </div>
-                            <div>
-                              <p className="font-medium">{faculty?.name || 'Unknown Faculty'}</p>
-                              <p className="text-sm text-gray-500">{faculty?.username || 'No username'}</p>
-                            </div>
+                            {canAssignSubject && (
+                              <Button 
+                                variant="destructive" 
+                                size="sm" 
+                                onClick={() => handleRemoveAssignment(assignment.id)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            )}
                           </div>
                         );
                       })}
