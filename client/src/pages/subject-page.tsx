@@ -379,8 +379,13 @@ export default function SubjectPage() {
                 ) : filteredSubjects && filteredSubjects.length > 0 ? (
                   filteredSubjects.map((subject) => {
                     const department = departments?.find(d => d.id === subject.departmentId);
-                    const assignment = subjectAssignments?.find(a => a.subjectId === subject.id);
-                    const assignedFaculty = assignment ? teachingUsers?.find(f => f.id === assignment.facultyId) : undefined;
+                    // Get all assignments for this subject
+                    const subjectAssignmentsList = subjectAssignments?.filter(a => a.subjectId === subject.id) || [];
+                    const hasAssignments = subjectAssignmentsList.length > 0;
+                    
+                    // Get the first faculty member (if any)
+                    const firstAssignment = subjectAssignmentsList[0];
+                    const firstFaculty = firstAssignment ? teachingUsers?.find(f => f.id === firstAssignment.facultyId) : undefined;
                     
                     return (
                       <TableRow key={subject.id}>
@@ -396,14 +401,14 @@ export default function SubjectPage() {
                         <TableCell>{subject.academicYear}</TableCell>
                         <TableCell>{getStatusBadge(subject.status)}</TableCell>
                         <TableCell>
-                          {assignment ? (
+                          {hasAssignments ? (
                             <div className="flex flex-col gap-1">
                               <div className="flex items-center gap-2">
                                 <User className="h-4 w-4 text-gray-500" />
-                                <span>{assignedFaculty?.name || 'Unknown Faculty'}</span>
+                                <span>{firstFaculty?.name || 'Unknown Faculty'}</span>
                               </div>
                               {/* Show a count if multiple faculty are assigned */}
-                              {(subjectAssignments?.filter(a => a.subjectId === subject.id)?.length || 0) > 1 && (
+                              {subjectAssignmentsList.length > 1 && (
                                 <Button 
                                   variant="link" 
                                   className="text-xs text-blue-500 ml-6 p-0 h-auto"
@@ -412,7 +417,7 @@ export default function SubjectPage() {
                                     handleViewFacultyClick(subject);
                                   }}
                                 >
-                                  +{(subjectAssignments?.filter(a => a.subjectId === subject.id)?.length || 1) - 1} more
+                                  +{subjectAssignmentsList.length - 1} more
                                 </Button>
                               )}
                             </div>
@@ -432,7 +437,8 @@ export default function SubjectPage() {
                                 >
                                   <UserPlus className="h-4 w-4" />
                                 </Button>
-                                {(subjectAssignments?.filter(a => a.subjectId === subject.id)?.length || 0) > 0 && (
+                                {/* Check if any faculty is assigned to show the view button */}
+                                {(subjectAssignmentsList.length > 0) && (
                                   <Button 
                                     variant="ghost" 
                                     size="icon" 
@@ -781,10 +787,11 @@ export default function SubjectPage() {
           <div className="mt-4">
             {selectedSubject && (
               <div className="space-y-4">
-                {(subjectAssignments?.filter(a => a.subjectId === selectedSubject.id)?.length || 0) > 0 ? (
+                {/* Render assignments conditionally */}
+                {subjectAssignments && subjectAssignments.filter(a => a.subjectId === selectedSubject.id).length > 0 ? (
                   <div className="space-y-2">
                     {subjectAssignments
-                      ?.filter(a => a.subjectId === selectedSubject.id)
+                      .filter(a => a.subjectId === selectedSubject.id)
                       .map(assignment => {
                         const faculty = teachingUsers?.find(f => f.id === assignment.facultyId);
                         return (
