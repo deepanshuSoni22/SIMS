@@ -62,11 +62,8 @@ export default function SubjectPage() {
   });
 
   // Fetch both faculty and HOD users for assignment
-  const { data: teachingUsers, refetch: refetchTeachingUsers } = useQuery<UserType[]>({
-    queryKey: ["/api/users/teaching"],
-    staleTime: 0, // Always fetch fresh data
-    refetchOnMount: true, // Refetch when component mounts
-    refetchOnWindowFocus: true, // Refetch when window gets focus
+  const { data: teachingUsers } = useQuery<UserType[]>({
+    queryKey: [`/api/users/teaching`],
   });
   
   // Fetch subject assignments to display assigned faculty
@@ -106,20 +103,16 @@ export default function SubjectPage() {
       const res = await apiRequest("POST", "/api/subject-assignments", data);
       return await res.json();
     },
-    onSuccess: async (data) => {
+    onSuccess: (data) => {
       console.log("Subject assignment successful:", data);
       
-      // Immediately refetch teaching users to refresh the data
-      console.log("Refetching teaching users data...");
-      await refetchTeachingUsers();
-      
-      // Get the faculty name for the success message (after the refetch)
+      // Get the faculty name for the success message
       const faculty = teachingUsers?.find(f => f.id === data.facultyId);
       const subject = subjects?.find(s => s.id === data.subjectId);
       
       toast({
         title: "Subject assigned successfully",
-        description: `${subject?.name} has been assigned to ${faculty?.name || 'faculty member'}.`,
+        description: `${subject?.name} has been assigned to ${faculty?.name}.`,
       });
       
       // Update local state
@@ -385,26 +378,7 @@ export default function SubjectPage() {
                   filteredSubjects.map((subject) => {
                     const department = departments?.find(d => d.id === subject.departmentId);
                     const assignment = subjectAssignments?.find(a => a.subjectId === subject.id);
-                    
-                    // More verbose approach for debugging
-                    let assignedFaculty = undefined;
-                    if (assignment && assignment.facultyId) {
-                      console.log(`Looking for faculty with ID ${assignment.facultyId} for subject ${subject.name}`);
-                      
-                      if (teachingUsers) {
-                        console.log(`Available teaching users: ${teachingUsers.length}`);
-                        console.log("Teaching user IDs:", teachingUsers.map(u => u.id));
-                        assignedFaculty = teachingUsers.find(f => f.id === assignment.facultyId);
-                        
-                        if (assignedFaculty) {
-                          console.log(`Found faculty: ${assignedFaculty.name}`);
-                        } else {
-                          console.log(`Faculty with ID ${assignment.facultyId} not found`);
-                        }
-                      } else {
-                        console.log("Teaching users data is not loaded yet");
-                      }
-                    }
+                    const assignedFaculty = assignment ? teachingUsers?.find(f => f.id === assignment.facultyId) : undefined;
                     
                     return (
                       <TableRow key={subject.id}>
@@ -806,21 +780,7 @@ export default function SubjectPage() {
                     {subjectAssignments
                       ?.filter(a => a.subjectId === selectedSubject.id)
                       .map(assignment => {
-                        // Debug logging for the faculty member lookup
-                        console.log(`Looking up faculty ID ${assignment.facultyId} in view dialog`);
-                        
-                        let faculty = undefined;
-                        if (teachingUsers) {
-                          faculty = teachingUsers.find(f => f.id === assignment.facultyId);
-                          if (faculty) {
-                            console.log(`Found faculty in dialog: ${faculty.name} (ID: ${faculty.id})`);
-                          } else {
-                            console.log(`Faculty with ID ${assignment.facultyId} not found in teaching users list`);
-                            // Explicitly log available teaching user IDs for comparison
-                            console.log(`Available teaching user IDs:`, teachingUsers.map(u => u.id));
-                          }
-                        }
-                        
+                        const faculty = teachingUsers?.find(f => f.id === assignment.facultyId);
                         return (
                           <div key={assignment.id} className="flex items-center gap-3 p-3 rounded-md border">
                             <div className="flex-shrink-0 h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -829,11 +789,6 @@ export default function SubjectPage() {
                             <div>
                               <p className="font-medium">{faculty?.name || 'Unknown Faculty'}</p>
                               <p className="text-sm text-gray-500">{faculty?.username || 'No username'}</p>
-                              {!faculty && (
-                                <p className="text-xs text-red-500">
-                                  Faculty ID: {assignment.facultyId} (Debug info)
-                                </p>
-                              )}
                             </div>
                           </div>
                         );

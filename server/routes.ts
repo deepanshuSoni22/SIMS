@@ -20,14 +20,6 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 
-// Authentication middleware
-const requireAuth = (req: Request, res: Response, next: NextFunction) => {
-  if (!req.isAuthenticated()) {
-    return res.status(401).json({ message: "Unauthorized" });
-  }
-  next();
-};
-
 // Middleware for role-based access control
 const checkRole = (allowedRoles: string[]) => {
   return (req: Request, res: Response, next: NextFunction) => {
@@ -458,77 +450,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   );
   
-  // Add endpoint for teaching users (Faculty + HOD) using a direct query
+  // Add endpoint for teaching users (Faculty + HOD)
   app.get(
     "/api/users/teaching",
-    requireAuth, // Add authentication middleware
     async (req, res) => {
       try {
-        console.log("Teaching users endpoint called by user:", req.user?.id, req.user?.username);
-        
-        if (!req.user) {
-          console.log("No authenticated user found");
-          return res.status(401).json({ message: "Not authenticated" });
-        }
-        
-        // Get all users directly and filter by roles in JavaScript
-        console.log("Fetching all users from storage");
-        const allUsers = await storage.getAllUsers();
-        
-        if (!allUsers) {
-          console.log("Failed to fetch users - null value returned");
-          return res.status(500).json({ message: "Failed to fetch users" });
-        }
-        
-        console.log("Total users fetched:", allUsers.length);
-        
-        // Filter users by role
-        const facultyUsers = allUsers.filter(user => user.role === roles.FACULTY);
-        const hodUsers = allUsers.filter(user => user.role === roles.HOD);
-        
-        // Detailed debug logging
-        console.log("Faculty users count:", facultyUsers.length);
-        console.log("Faculty user IDs:", facultyUsers.map(u => u.id));
-        console.log("HOD users count:", hodUsers.length);
-        console.log("HOD user IDs:", hodUsers.map(u => u.id));
-        
-        // Log each faculty user's details to debug issues with missing data
-        console.log("Faculty users detailed:")
-        facultyUsers.forEach(user => {
-          console.log(`ID: ${user.id}, Name: ${user.name || 'MISSING'}, Username: ${user.username}, Role: ${user.role}`);
-        });
-        
-        // Log each HOD user's details to debug issues with missing data
-        console.log("HOD users detailed:")
-        hodUsers.forEach(user => {
-          console.log(`ID: ${user.id}, Name: ${user.name || 'MISSING'}, Username: ${user.username}, Role: ${user.role}`);
-        });
+        // Get both faculty and HOD users for subject assignments
+        const facultyUsers = await storage.getUsersByRole(roles.FACULTY);
+        const hodUsers = await storage.getUsersByRole(roles.HOD);
         
         // Explicitly cast users to avoid issues with password property
         const sanitizedFacultyUsers = facultyUsers.map(user => ({
           id: user.id,
-          name: user.name || "Unknown Faculty",  // Handle missing name
+          name: user.name,
           username: user.username,
           role: user.role,
-          departmentId: user.departmentId || null  // Handle undefined departmentId
+          departmentId: user.departmentId
         }));
 
         const sanitizedHodUsers = hodUsers.map(user => ({
           id: user.id,
-          name: user.name || "Unknown HOD",  // Handle missing name
+          name: user.name,
           username: user.username,
           role: user.role,
-          departmentId: user.departmentId || null  // Handle undefined departmentId
+          departmentId: user.departmentId
         }));
         
         // Combine the sanitized users
         const teachingUsers = [...sanitizedFacultyUsers, ...sanitizedHodUsers];
         
-        console.log("Final teaching users to be sent:", teachingUsers.length);
-        console.log("Final teaching user IDs:", teachingUsers.map(u => u.id).join(', '));
-        
-        // Set cache control headers to prevent caching
-        res.set('Cache-Control', 'no-store, no-cache, must-revalidate, private');
         res.json(teachingUsers);
       } catch (error) {
         console.error("Error fetching teaching users:", error);
@@ -540,7 +490,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subject Assignment Routes
   app.get(
     "/api/subject-assignments", 
-    requireAuth, // Add authentication middleware
     async (req, res) => {
       const assignments = await storage.getAllSubjectAssignments();
       res.json(assignments);
