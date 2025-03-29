@@ -1,6 +1,6 @@
 import { useAuth, roles } from "@/hooks/use-auth";
 import { useLocation, Link } from "wouter";
-import { LogOut } from "lucide-react";
+import { LogOut, User as UserIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import soundaryaLogo from "../../assets/soundarya_logo.png";
@@ -115,15 +115,17 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
           </div>
           
           {/* User Profile */}
-          <div className="p-4 border-b flex items-center">
-            <Avatar className="w-10 h-10 rounded-full bg-gray-300 text-primary">
-              <AvatarFallback>{user?.name ? getInitials(user.name) : "U"}</AvatarFallback>
-            </Avatar>
-            <div className="ml-3">
-              <p className="font-medium text-gray-800">{user?.name}</p>
-              <p className="text-sm text-gray-500">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User"}</p>
+          <Link to="/profile" onClick={() => closeSidebar()}>
+            <div className="p-4 border-b flex items-center cursor-pointer hover:bg-gray-50 group">
+              <Avatar className="w-10 h-10 rounded-full bg-gray-300 text-primary">
+                <AvatarFallback>{user?.name ? getInitials(user.name) : "U"}</AvatarFallback>
+              </Avatar>
+              <div className="ml-3">
+                <p className="font-medium text-gray-800 group-hover:text-primary">{user?.name}</p>
+                <p className="text-sm text-gray-500">{user?.role ? user.role.charAt(0).toUpperCase() + user.role.slice(1) : "User"}</p>
+              </div>
             </div>
-          </div>
+          </Link>
           
           {/* Navigation Menu */}
           <nav className="flex-1 overflow-y-auto pt-2">
@@ -169,7 +171,13 @@ export default function Sidebar({ isOpen, closeSidebar }: SidebarProps) {
           </nav>
           
           {/* Bottom Actions */}
-          <div className="p-4 border-t">
+          <div className="p-4 border-t space-y-3">
+            <Link to="/profile" onClick={() => closeSidebar()}>
+              <div className="flex items-center text-gray-600 hover:text-primary w-full cursor-pointer">
+                <UserIcon className="h-5 w-5 mr-3" />
+                My Profile
+              </div>
+            </Link>
             <button 
               className="flex items-center text-gray-600 hover:text-primary w-full"
               onClick={handleLogout}

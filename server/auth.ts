@@ -210,4 +210,61 @@ export function setupAuth(app: Express) {
     const { password, ...userWithoutPassword } = req.user;
     res.json(userWithoutPassword);
   });
+  
+  // Update current user profile
+  app.patch("/api/user/profile", async (req, res, next) => {
+    try {
+      if (!req.isAuthenticated()) {
+        return res.status(401).json({ message: "You must be logged in to update your profile" });
+      }
+      
+      const userId = req.user.id;
+      const updates = req.body;
+      
+      // Only allow updating name and possibly password
+      const allowedUpdates: Record<string, any> = {};
+      if (updates.name) allowedUpdates.name = updates.name;
+      
+      // Handle password update separately to hash it
+      if (updates.password) {
+        // Validate current password if provided
+        if (updates.currentPassword) {
+          const valid = await comparePasswords(updates.currentPassword, req.user.password);
+          if (!valid) {
+            return res.status(400).json({ message: "Current password is incorrect" });
+          }
+        }
+        
+        // Hash the new password
+        allowedUpdates.password = await hashPassword(updates.password);
+      }
+      
+      if (Object.keys(allowedUpdates).length === 0) {
+        return res.status(400).json({ message: "No valid fields to update" });
+      }
+      
+      // Update the user
+      const updatedUser = await storage.updateUser(userId, allowedUpdates);
+      
+      if (!updatedUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Log the activity
+      await storage.createActivityLog({
+        userId,
+        action: "updated",
+        entityType: "profile",
+        details: "Updated personal profile information",
+        entityId: userId
+      });
+      
+      // Return updated user without password
+      const { password, ...userWithoutPassword } = updatedUser;
+      res.json(userWithoutPassword);
+    } catch (error) {
+      console.error("Error updating profile:", error);
+      next(error);
+    }
+  });
 }
