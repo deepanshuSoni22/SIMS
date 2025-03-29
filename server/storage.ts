@@ -14,7 +14,9 @@ import {
   attainments, type Attainment, type InsertAttainment,
   activityLogs, type ActivityLog, type InsertActivityLog,
   notifications, type Notification, type InsertNotification,
-  systemSettings, type SystemSetting, type InsertSystemSetting
+  systemSettings, type SystemSetting, type InsertSystemSetting,
+  passwordResetOTPs, type PasswordResetOTP, type InsertPasswordResetOTP,
+  otpStatus
 } from "@shared/schema";
 import session from "express-session";
 import createMemoryStore from "memorystore";
@@ -50,6 +52,12 @@ export interface IStorage {
   getUsersCount(): Promise<number>;
   getUsersByRole(role: string): Promise<User[]>;
   getUsersByDepartment(departmentId: number): Promise<User[]>;
+  
+  // OTP Management for Password Reset
+  createPasswordResetOTP(userId: number, otp: string, expiresAt: Date): Promise<PasswordResetOTP>;
+  getLatestPasswordResetOTP(userId: number): Promise<PasswordResetOTP | undefined>;
+  updatePasswordResetOTPStatus(id: number, status: string): Promise<PasswordResetOTP | undefined>;
+  getUserByWhatsappNumber(whatsappNumber: string): Promise<User | undefined>;
   
   // Department Management
   getDepartment(id: number): Promise<Department | undefined>;
@@ -290,6 +298,35 @@ export class MemStorage implements IStorage {
   async getUsersByDepartment(departmentId: number): Promise<User[]> {
     return Array.from(this.users.values()).filter(
       user => user.departmentId === departmentId
+    );
+  }
+  
+  // OTP Management for Password Reset
+  async createPasswordResetOTP(userId: number, otp: string, expiresAt: Date): Promise<PasswordResetOTP> {
+    // In-memory implementation (not used in production)
+    return {
+      id: 1,
+      userId,
+      otp,
+      expiresAt,
+      status: otpStatus.PENDING,
+      createdAt: new Date()
+    };
+  }
+  
+  async getLatestPasswordResetOTP(userId: number): Promise<PasswordResetOTP | undefined> {
+    // In-memory implementation (not used in production)
+    return undefined;
+  }
+  
+  async updatePasswordResetOTPStatus(id: number, status: string): Promise<PasswordResetOTP | undefined> {
+    // In-memory implementation (not used in production)
+    return undefined;
+  }
+  
+  async getUserByWhatsappNumber(whatsappNumber: string): Promise<User | undefined> {
+    return Array.from(this.users.values()).find(
+      (user) => user.whatsappNumber === whatsappNumber
     );
   }
 
@@ -900,6 +937,11 @@ export class DatabaseStorage implements IStorage {
 
   async getUserByUsername(username: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user || undefined;
+  }
+  
+  async getUserByWhatsappNumber(whatsappNumber: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.whatsappNumber, whatsappNumber));
     return user || undefined;
   }
 
@@ -1520,6 +1562,37 @@ export class DatabaseStorage implements IStorage {
       console.error('Error updating college title:', error);
       return false;
     }
+  }
+  
+  // OTP Management for Password Reset
+  async createPasswordResetOTP(userId: number, otp: string, expiresAt: Date): Promise<PasswordResetOTP> {
+    const [passwordResetOTP] = await db.insert(passwordResetOTPs)
+      .values({
+        userId,
+        otp,
+        expiresAt,
+        status: otpStatus.PENDING,
+        createdAt: new Date()
+      })
+      .returning();
+    return passwordResetOTP;
+  }
+  
+  async getLatestPasswordResetOTP(userId: number): Promise<PasswordResetOTP | undefined> {
+    const [passwordResetOTP] = await db.select()
+      .from(passwordResetOTPs)
+      .where(eq(passwordResetOTPs.userId, userId))
+      .orderBy(desc(passwordResetOTPs.createdAt))
+      .limit(1);
+    return passwordResetOTP || undefined;
+  }
+  
+  async updatePasswordResetOTPStatus(id: number, status: string): Promise<PasswordResetOTP | undefined> {
+    const [passwordResetOTP] = await db.update(passwordResetOTPs)
+      .set({ status })
+      .where(eq(passwordResetOTPs.id, id))
+      .returning();
+    return passwordResetOTP || undefined;
   }
 }
 

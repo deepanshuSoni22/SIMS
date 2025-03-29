@@ -18,8 +18,10 @@ import {
   insertAttainmentSchema,
   insertNotificationSchema,
   insertSystemSettingSchema,
-  roles
+  roles,
+  otpStatus
 } from "@shared/schema";
+import { generateOtp, sendOtpWhatsApp, verifyOtp } from "./whatsapp-service";
 import { z } from "zod";
 
 // Middleware for role-based access control
@@ -1624,6 +1626,248 @@ export async function registerRoutes(app: Express): Promise<Server> {
       return res.status(500).json({ message: "Server error while resetting password" });
     }
   });
+
+  // Password Reset Routes
+  app.post(
+    "/api/reset-password/request",
+    async (req, res) => {
+      try {
+        const { username } = req.body;
+        
+        // Validate request
+        if (!username) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Username is required" 
+          });
+        }
+        
+        // Find user by username
+        const user = await storage.getUserByUsername(username);
+        
+        if (!user) {
+          return res.status(404).json({ 
+            success: false, 
+            message: "User not found" 
+          });
+        }
+        
+        // Check if user has WhatsApp number
+        if (!user.whatsappNumber) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "User does not have a WhatsApp number registered. Please contact administrator." 
+          });
+        }
+        
+        // Generate OTP
+        const otp = generateOtp(user.id);
+        
+        // Create expiration time (15 minutes from now)
+        const expiresAt = new Date();
+        expiresAt.setMinutes(expiresAt.getMinutes() + 15);
+        
+        // Save OTP in database
+        await storage.createPasswordResetOTP(user.id, otp, expiresAt);
+        
+        // Send OTP via WhatsApp
+        const success = await sendOtpWhatsApp(user.whatsappNumber, otp);
+        
+        if (!success) {
+          return res.status(500).json({ 
+            success: false, 
+            message: "Failed to send OTP. Please try again later." 
+          });
+        }
+        
+        // Create activity log
+        await storage.createActivityLog({
+          userId: user.id,
+          action: "requested",
+          entityType: "password-reset",
+          details: "Password reset requested"
+        });
+        
+        res.status(200).json({ 
+          success: true, 
+          message: "OTP sent to your WhatsApp number", 
+          userId: user.id 
+        });
+      } catch (error) {
+        console.error("Password reset request error:", error);
+        res.status(500).json({ 
+          success: false, 
+          message: "An error occurred while processing your request" 
+        });
+      }
+    }
+  );
+  
+  app.post(
+    "/api/reset-password/verify",
+    async (req, res) => {
+      try {
+        const { userId, otp } = req.body;
+        
+        // Validate request
+        if (!userId || !otp) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "User ID and OTP are required" 
+          });
+        }
+        
+        // Find user
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(404).json({ 
+            success: false, 
+            message: "User not found" 
+          });
+        }
+        
+        // Get latest OTP for user
+        const latestOTP = await storage.getLatestPasswordResetOTP(userId);
+        
+        if (!latestOTP) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "No OTP request found. Please request a new OTP." 
+          });
+        }
+        
+        // Check if OTP is expired
+        if (new Date() > latestOTP.expiresAt) {
+          // Update OTP status to expired
+          await storage.updatePasswordResetOTPStatus(latestOTP.id, otpStatus.EXPIRED);
+          
+          return res.status(400).json({ 
+            success: false, 
+            message: "OTP has expired. Please request a new one." 
+          });
+        }
+        
+        // Check if OTP is already used
+        if (latestOTP.status === otpStatus.VERIFIED) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "OTP has already been used. Please request a new one." 
+          });
+        }
+        
+        // Verify OTP
+        if (latestOTP.otp !== otp) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Invalid OTP. Please try again." 
+          });
+        }
+        
+        // Mark OTP as verified
+        await storage.updatePasswordResetOTPStatus(latestOTP.id, otpStatus.VERIFIED);
+        
+        // Create activity log
+        await storage.createActivityLog({
+          userId: user.id,
+          action: "verified",
+          entityType: "password-reset",
+          details: "OTP verified for password reset"
+        });
+        
+        res.status(200).json({ 
+          success: true, 
+          message: "OTP verified successfully", 
+          userId: user.id 
+        });
+      } catch (error) {
+        console.error("OTP verification error:", error);
+        res.status(500).json({ 
+          success: false, 
+          message: "An error occurred while verifying OTP" 
+        });
+      }
+    }
+  );
+  
+  app.post(
+    "/api/reset-password/complete",
+    async (req, res) => {
+      try {
+        const { userId, newPassword } = req.body;
+        
+        // Validate request
+        if (!userId || !newPassword) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "User ID and new password are required" 
+          });
+        }
+        
+        // Password validation
+        if (typeof newPassword !== "string" || newPassword.length < 6) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Password must be at least 6 characters long" 
+          });
+        }
+        
+        // Find user
+        const user = await storage.getUser(userId);
+        
+        if (!user) {
+          return res.status(404).json({ 
+            success: false, 
+            message: "User not found" 
+          });
+        }
+        
+        // Get latest OTP for user to ensure verification was done
+        const latestOTP = await storage.getLatestPasswordResetOTP(userId);
+        
+        if (!latestOTP || latestOTP.status !== otpStatus.VERIFIED) {
+          return res.status(400).json({ 
+            success: false, 
+            message: "Please verify your OTP before setting a new password" 
+          });
+        }
+        
+        // Hash new password
+        const hashedPassword = await hashPassword(newPassword);
+        
+        // Update user password
+        const updatedUser = await storage.updateUser(userId, { 
+          password: hashedPassword 
+        });
+        
+        if (!updatedUser) {
+          return res.status(500).json({ 
+            success: false, 
+            message: "Failed to update password" 
+          });
+        }
+        
+        // Create activity log
+        await storage.createActivityLog({
+          userId: user.id,
+          action: "reset",
+          entityType: "password",
+          details: "Password reset completed"
+        });
+        
+        res.status(200).json({ 
+          success: true, 
+          message: "Password reset successfully" 
+        });
+      } catch (error) {
+        console.error("Password reset completion error:", error);
+        res.status(500).json({ 
+          success: false, 
+          message: "An error occurred while resetting password" 
+        });
+      }
+    }
+  );
 
   const httpServer = createServer(app);
   return httpServer;

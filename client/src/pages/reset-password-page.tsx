@@ -1,170 +1,216 @@
-import React, { useState } from "react";
-import { z } from "zod";
-import { useForm } from "react-hook-form";
-import { zodResolver } from "@hookform/resolvers/zod";
-import { useMutation } from "@tanstack/react-query";
-import { useLocation, useRoute, Link } from "wouter";
-import { apiRequest } from "@/lib/queryClient";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Form, FormControl, FormDescription, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Loader2, ArrowLeftIcon } from "lucide-react";
+import { useState } from "react";
 import { useToast } from "@/hooks/use-toast";
-import { useCollegeTitle } from "@/hooks/use-college-title";
-import { useAuth } from "@/hooks/use-auth";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { apiRequest } from "@/lib/queryClient";
+import { Label } from "@/components/ui/label";
+import { Loader2 } from "lucide-react";
+import { useLocation } from "wouter";
 
-// Schema for the request password reset form
-const requestResetSchema = z.object({
+// Step 1: Request OTP
+const requestFormSchema = z.object({
   username: z.string().min(1, "Username is required"),
 });
 
-// Schema for the reset password form
-const resetPasswordSchema = z.object({
-  username: z.string().min(1, "Username is required"),
-  securityAnswer: z.string().min(1, "Security answer is required"),
+// Step 2: Verify OTP
+const verifyFormSchema = z.object({
+  otp: z.string().min(1, "OTP is required"),
+});
+
+// Step 3: Reset Password
+const resetPasswordFormSchema = z.object({
   newPassword: z.string().min(6, "Password must be at least 6 characters"),
-  confirmPassword: z.string().min(6, "Confirm password is required"),
-}).refine((data) => data.newPassword === data.confirmPassword, {
+  confirmPassword: z.string().min(6, "Password must be at least 6 characters"),
+}).refine(data => data.newPassword === data.confirmPassword, {
   message: "Passwords do not match",
   path: ["confirmPassword"],
 });
 
-type RequestResetFormValues = z.infer<typeof requestResetSchema>;
-type ResetPasswordFormValues = z.infer<typeof resetPasswordSchema>;
+type RequestFormValues = z.infer<typeof requestFormSchema>;
+type VerifyFormValues = z.infer<typeof verifyFormSchema>;
+type ResetPasswordFormValues = z.infer<typeof resetPasswordFormSchema>;
 
 export default function ResetPasswordPage() {
-  const [, navigate] = useLocation();
-  const [match] = useRoute("/auth");
+  const [step, setStep] = useState<"request" | "verify" | "reset">("request");
+  const [userId, setUserId] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
-  const { user } = useAuth();
-  const { collegeTitle, instituteName, systemName } = useCollegeTitle();
-  const [securityQuestion, setSecurityQuestion] = useState<string | null>(null);
-  const [currentUsername, setCurrentUsername] = useState<string | null>(null);
-  const [step, setStep] = useState<"request" | "reset">("request");
+  const [_, navigate] = useLocation();
 
-  // If user is logged in, redirect to home
-  React.useEffect(() => {
-    if (user) {
-      navigate("/");
-    }
-  }, [user, navigate]);
-
-  // Request reset form
-  const requestResetForm = useForm<RequestResetFormValues>({
-    resolver: zodResolver(requestResetSchema),
+  // Step 1: Request OTP form
+  const requestForm = useForm<RequestFormValues>({
+    resolver: zodResolver(requestFormSchema),
     defaultValues: {
       username: "",
     },
   });
 
-  // Reset password form
-  const resetPasswordForm = useForm<ResetPasswordFormValues>({
-    resolver: zodResolver(resetPasswordSchema),
+  // Step 2: Verify OTP form
+  const verifyForm = useForm<VerifyFormValues>({
+    resolver: zodResolver(verifyFormSchema),
     defaultValues: {
-      username: "",
-      securityAnswer: "",
+      otp: "",
+    },
+  });
+
+  // Step 3: Reset Password form
+  const resetPasswordForm = useForm<ResetPasswordFormValues>({
+    resolver: zodResolver(resetPasswordFormSchema),
+    defaultValues: {
       newPassword: "",
       confirmPassword: "",
     },
   });
 
-  // Request password reset mutation
-  const requestResetMutation = useMutation({
-    mutationFn: async (data: RequestResetFormValues) => {
-      const response = await apiRequest("POST", "/api/request-password-reset", data);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to request password reset");
-      }
-      return await response.json();
-    },
-    onSuccess: (data) => {
-      setSecurityQuestion(data.securityQuestion);
-      setCurrentUsername(data.username);
-      
-      // Pre-fill the username in the reset form
-      resetPasswordForm.setValue("username", data.username);
-      
-      // Move to the reset step
-      setStep("reset");
-    },
-    onError: (error: Error) => {
-      toast({
-        title: "Request Failed",
-        description: error.message,
-        variant: "destructive",
-      });
-    },
-  });
-
-  // Reset password mutation
-  const resetPasswordMutation = useMutation({
-    mutationFn: async (data: ResetPasswordFormValues) => {
-      const resetData = {
+  const handleRequestOTP = async (data: RequestFormValues) => {
+    setIsLoading(true);
+    try {
+      const response = await apiRequest("POST", "/api/reset-password/request", {
         username: data.username,
-        securityAnswer: data.securityAnswer,
-        newPassword: data.newPassword,
-      };
-      
-      const response = await apiRequest("POST", "/api/reset-password", resetData);
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to reset password");
-      }
-      return await response.json();
-    },
-    onSuccess: () => {
-      toast({
-        title: "Password Reset Successful",
-        description: "Your password has been reset. Please log in with your new password.",
       });
-      navigate("/auth");
-    },
-    onError: (error: Error) => {
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setUserId(result.userId);
+        setStep("verify");
+        toast({
+          title: "OTP sent",
+          description: "An OTP has been sent to your WhatsApp number",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to send OTP",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error requesting OTP:", error);
       toast({
-        title: "Reset Failed",
-        description: error.message,
+        title: "Error",
+        description: "An error occurred while requesting OTP",
         variant: "destructive",
       });
-    },
-  });
-
-  // Handle request reset form submission
-  const handleRequestReset = (data: RequestResetFormValues) => {
-    requestResetMutation.mutate(data);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  // Handle reset password form submission
-  const handleResetPassword = (data: ResetPasswordFormValues) => {
-    resetPasswordMutation.mutate(data);
+  const handleVerifyOTP = async (data: VerifyFormValues) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID not found. Please start over.",
+        variant: "destructive",
+      });
+      setStep("request");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await apiRequest("POST", "/api/reset-password/verify", {
+        userId,
+        otp: data.otp,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        setStep("reset");
+        toast({
+          title: "OTP verified",
+          description: "You can now reset your password",
+        });
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to verify OTP",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error verifying OTP:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while verifying OTP",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (data: ResetPasswordFormValues) => {
+    if (!userId) {
+      toast({
+        title: "Error",
+        description: "User ID not found. Please start over.",
+        variant: "destructive",
+      });
+      setStep("request");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const response = await apiRequest("POST", "/api/reset-password/complete", {
+        userId,
+        newPassword: data.newPassword,
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Success",
+          description: "Your password has been reset. You can now login.",
+        });
+        navigate("/auth");
+      } else {
+        toast({
+          title: "Error",
+          description: result.message || "Failed to reset password",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error("Error resetting password:", error);
+      toast({
+        title: "Error",
+        description: "An error occurred while resetting password",
+        variant: "destructive",
+      });
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <div className="w-full max-w-4xl flex flex-col md:flex-row">
-        {/* Left Column - Form */}
-        <div className="w-full md:w-1/2 p-6">
-          <Link href="/auth" className="inline-flex items-center mb-4 text-sm font-medium text-primary">
-            <ArrowLeftIcon className="mr-2 h-4 w-4" /> Back to Login
-          </Link>
-          
+    <div className="flex flex-col justify-center min-h-screen p-4 bg-slate-50">
+      <div className="flex justify-center">
+        <div className="w-full max-w-md">
           <Card>
-            <CardHeader>
+            <CardHeader className="text-center">
               <CardTitle>Reset Password</CardTitle>
               <CardDescription>
-                {step === "request" 
-                  ? "Enter your username to receive your security question." 
-                  : "Answer your security question to reset your password."}
+                {step === "request" && "Enter your username to receive an OTP via WhatsApp"}
+                {step === "verify" && "Enter the OTP sent to your WhatsApp number"}
+                {step === "reset" && "Create a new password for your account"}
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {step === "request" ? (
-                <Form {...requestResetForm}>
-                  <form onSubmit={requestResetForm.handleSubmit(handleRequestReset)} className="space-y-4">
+              {step === "request" && (
+                <Form {...requestForm}>
+                  <form onSubmit={requestForm.handleSubmit(handleRequestOTP)} className="space-y-6">
                     <FormField
-                      control={requestResetForm.control}
+                      control={requestForm.control}
                       name="username"
                       render={({ field }) => (
                         <FormItem>
@@ -176,47 +222,53 @@ export default function ResetPasswordPage() {
                         </FormItem>
                       )}
                     />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={requestResetMutation.isPending}
-                    >
-                      {requestResetMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Sending OTP...
+                        </>
+                      ) : (
+                        "Request OTP"
                       )}
-                      Continue
                     </Button>
                   </form>
                 </Form>
-              ) : (
-                <Form {...resetPasswordForm}>
-                  <form onSubmit={resetPasswordForm.handleSubmit(handleResetPassword)} className="space-y-4">
-                    {securityQuestion && (
-                      <Alert className="mb-4">
-                        <AlertDescription>
-                          Security Question: <strong>{securityQuestion}</strong>
-                        </AlertDescription>
-                      </Alert>
-                    )}
-                    
+              )}
+
+              {step === "verify" && (
+                <Form {...verifyForm}>
+                  <form onSubmit={verifyForm.handleSubmit(handleVerifyOTP)} className="space-y-6">
                     <FormField
-                      control={resetPasswordForm.control}
-                      name="securityAnswer"
+                      control={verifyForm.control}
+                      name="otp"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>Security Answer</FormLabel>
+                          <FormLabel>OTP</FormLabel>
                           <FormControl>
-                            <Input placeholder="Enter your answer" {...field} />
+                            <Input placeholder="Enter OTP received on WhatsApp" {...field} />
                           </FormControl>
-                          <FormDescription>
-                            Answer is case-sensitive
-                          </FormDescription>
                           <FormMessage />
                         </FormItem>
                       )}
                     />
-                    
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Verifying...
+                        </>
+                      ) : (
+                        "Verify OTP"
+                      )}
+                    </Button>
+                  </form>
+                </Form>
+              )}
+
+              {step === "reset" && (
+                <Form {...resetPasswordForm}>
+                  <form onSubmit={resetPasswordForm.handleSubmit(handleResetPassword)} className="space-y-6">
                     <FormField
                       control={resetPasswordForm.control}
                       name="newPassword"
@@ -230,7 +282,6 @@ export default function ResetPasswordPage() {
                         </FormItem>
                       )}
                     />
-                    
                     <FormField
                       control={resetPasswordForm.control}
                       name="confirmPassword"
@@ -244,42 +295,31 @@ export default function ResetPasswordPage() {
                         </FormItem>
                       )}
                     />
-                    
-                    <Button 
-                      type="submit" 
-                      className="w-full" 
-                      disabled={resetPasswordMutation.isPending}
-                    >
-                      {resetPasswordMutation.isPending && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Button type="submit" className="w-full" disabled={isLoading}>
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Resetting Password...
+                        </>
+                      ) : (
+                        "Reset Password"
                       )}
-                      Reset Password
                     </Button>
                   </form>
                 </Form>
               )}
             </CardContent>
+            <CardFooter className="flex justify-center">
+              <Button variant="link" onClick={() => navigate("/auth")}>
+                Back to Login
+              </Button>
+              {step !== "request" && (
+                <Button variant="link" onClick={() => setStep("request")}>
+                  Start Over
+                </Button>
+              )}
+            </CardFooter>
           </Card>
-        </div>
-
-        {/* Right Column - Hero */}
-        <div className="w-full md:w-1/2 p-6 flex items-center bg-primary/5 rounded-lg">
-          <div className="text-center md:text-left">
-            <h1 className="scroll-m-20 text-4xl font-extrabold tracking-tight lg:text-5xl text-transparent bg-clip-text bg-gradient-to-r from-primary to-primary/70 mb-4">
-              {collegeTitle}
-            </h1>
-            <h2 className="scroll-m-20 text-2xl font-semibold tracking-tight mb-2">
-              {instituteName}
-            </h2>
-            <p className="text-xl text-muted-foreground mb-8">{systemName}</p>
-            
-            <div className="space-y-4">
-              <div className="text-muted-foreground">
-                <h3 className="font-medium text-foreground mb-1">Password Recovery</h3>
-                <p>Reset your account password by answering your security question. If you cannot remember your security answer, please contact your administrator.</p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </div>

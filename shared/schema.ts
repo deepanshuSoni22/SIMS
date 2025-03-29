@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, json, timestamp } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, json, timestamp, varchar } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -8,6 +8,13 @@ export const roles = {
   HOD: "hod",
   FACULTY: "faculty",
   STUDENT: "student",
+} as const;
+
+// OTP status enum
+export const otpStatus = {
+  PENDING: "pending",
+  VERIFIED: "verified",
+  EXPIRED: "expired",
 } as const;
 
 // User Schema
@@ -326,3 +333,23 @@ export const insertSystemSettingSchema = createInsertSchema(systemSettings).pick
 
 export type InsertSystemSetting = z.infer<typeof insertSystemSettingSchema>;
 export type SystemSetting = typeof systemSettings.$inferSelect;
+
+// Password Reset OTP Schema
+export const passwordResetOTPs = pgTable("password_reset_otps", {
+  id: serial("id").primaryKey(),
+  userId: integer("user_id").notNull(),
+  otp: varchar("otp", { length: 6 }).notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  status: text("status", { enum: Object.values(otpStatus) }).notNull().default(otpStatus.PENDING),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertPasswordResetOTPSchema = createInsertSchema(passwordResetOTPs).pick({
+  userId: true,
+  otp: true,
+  expiresAt: true,
+  status: true,
+});
+
+export type InsertPasswordResetOTP = z.infer<typeof insertPasswordResetOTPSchema>;
+export type PasswordResetOTP = typeof passwordResetOTPs.$inferSelect;
