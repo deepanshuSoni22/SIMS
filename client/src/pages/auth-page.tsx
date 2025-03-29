@@ -278,13 +278,14 @@ export default function AuthPage() {
             </Tabs>
           </CardContent>
           <CardFooter className="flex flex-col">
-            {(!hasUsers || isSystemLoading || activeTab === "register") && (
+            {(!hasUsers || isSystemLoading) && activeTab === "login" && (
               <p className="text-center text-sm text-gray-500 mt-2">
-                {activeTab === "login" && !hasUsers ? (
-                  <span>Don't have an account? <button onClick={() => setActiveTab("register")} className="text-primary hover:underline">Register</button></span>
-                ) : (
-                  <span>Already have an account? <button onClick={() => setActiveTab("login")} className="text-primary hover:underline">Login</button></span>
-                )}
+                <span>Don't have an account? <Button variant="link" onClick={() => setActiveTab("register")} className="p-0 h-auto">Register</Button></span>
+              </p>
+            )}
+            {(!hasUsers || isSystemLoading) && activeTab === "register" && (
+              <p className="text-center text-sm text-gray-500 mt-2">
+                <span>Already have an account? <Button variant="link" onClick={() => setActiveTab("login")} className="p-0 h-auto">Login</Button></span>
               </p>
             )}
             {!isSystemLoading && !hasUsers && activeTab === "register" && (
