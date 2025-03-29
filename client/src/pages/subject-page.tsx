@@ -62,8 +62,18 @@ export default function SubjectPage() {
   });
 
   // Fetch both faculty and HOD users for assignment
-  const { data: teachingUsers } = useQuery<UserType[]>({
-    queryKey: [`/api/users/teaching`],
+  const { data: teachingUsers, isError: teachingUsersError } = useQuery<UserType[]>({
+    queryKey: ["/api/users/teaching"],
+    retry: 3,
+    retryDelay: 1000,
+    onError: (error) => {
+      console.error("Error fetching teaching users:", error);
+      toast({
+        title: "Error loading users",
+        description: "There was a problem loading teaching users. Please try again.",
+        variant: "destructive"
+      });
+    }
   });
   
   // Fetch subject assignments to display assigned faculty

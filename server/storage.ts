@@ -719,11 +719,21 @@ export class DatabaseStorage implements IStorage {
   }
 
   async getUsersByRole(role: string): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.role, role));
+    try {
+      return await db.select().from(users).where(eq(users.role, role));
+    } catch (error) {
+      console.error(`Error in getUsersByRole(${role}):`, error);
+      return []; // Return empty array instead of throwing error
+    }
   }
 
   async getUsersByDepartment(departmentId: number): Promise<User[]> {
-    return await db.select().from(users).where(eq(users.departmentId, departmentId));
+    try {
+      return await db.select().from(users).where(eq(users.departmentId, departmentId));
+    } catch (error) {
+      console.error(`Error in getUsersByDepartment(${departmentId}):`, error);
+      return []; // Return empty array instead of throwing error
+    }
   }
   
   async deleteUser(id: number): Promise<boolean> {
